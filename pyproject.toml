@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{project_name}"
+version = "0.0.0"
+description = "{desc}"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "周暘恩", email = "chouyangen0401@ntu.edu.tw" },
+    { name = "Anthony Chou", email = "mi.anthony.chou@gmail.com" },
+]
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+# 安裝方式 pip install {project_name}[dev]
+dev = [
+    "pytest>=7.0",
+    "black>=24.0",
+]
+
+[project.scripts]
+# 搭配 cli 指令使用 顯示版本
+{project_name} = "{project_name}.cli:main"
