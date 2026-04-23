@@ -12,8 +12,10 @@ class TreeExecutor:
     """
 
     def __init__(self):
-        self.primary_context: TwoSeriesComparisonContext = None
-        self.pris_tree_context: PRISTreeStructureContext = None
+        # Context 物件預先建立一次，往後每次只 mutate 屬性而不重新 new，
+        # 避免 N×M 次的 allocation 。3.10+ slots=True 的 dataclass 是 mutable 的。
+        self.primary_context: TwoSeriesComparisonContext = TwoSeriesComparisonContext(row1=None, row2=None)
+        self.pris_tree_context: PRISTreeStructureContext = PRISTreeStructureContext(source_row=None, root_node=None)
         self._b_is_ready = False
 
     def compile(self):
@@ -27,14 +29,13 @@ class TreeExecutor:
                 row1: 第一個資料列。(預設應為: source_df)
                 row2: 第二個資料列。(預設應為: ac_df)
         """
-        # 在這裡創建 primary_context，由執行器全權管理
-        self.primary_context = TwoSeriesComparisonContext(row1=row1, row2=row2)
+        # mutate 該共享 context，而不是建新物件 (避免 N×M 次 allocation)
+        self.primary_context.row1 = row1
+        self.primary_context.row2 = row2
         return self
     def set_pris_tree_context(self, source_row: pd.Series, root_node: PRISTreeNode):
-        self.pris_tree_context = PRISTreeStructureContext(
-            source_row=source_row,
-            root_node=root_node,
-        )
+        self.pris_tree_context.source_row = source_row
+        self.pris_tree_context.root_node = root_node
         return self
 
     def execute_tree(self, root_node: Node) -> bool:
