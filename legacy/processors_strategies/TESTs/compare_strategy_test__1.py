@@ -1,6 +1,6 @@
-from src.lib.multi_condition_clean.EntireCompareTree.stras import MatchingStrategyAdapter
-from src.lib.processors_strategies.cleaning_module.str_processors import CleaningStrategyAdapter
-from src.lib.processors_strategies.utils import *
+from legacy.EntireCompareTree.stras import MatchingStrategyAdapter
+from isd_str_sdk.core import CleaningStrategyAdapter
+from legacy.processors_strategies.utils import *
 
 # =============================================================================
 # 5. 測試輔助工具 (Test Helpers & Mocks)

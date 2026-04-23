@@ -1,6 +1,6 @@
-from src.lib.multi_condition_clean.EntireCompareTree.stras import MatchingStrategyAdapter
-from src.lib.processors_strategies.TESTs.compare_strategy_test__1 import *
-from src.lib.processors_strategies.cleaning_module.str_processors import CleaningStrategyAdapter
+from legacy.EntireCompareTree.stras import MatchingStrategyAdapter
+from .compare_strategy_test__1 import *
+from isd_str_sdk.core import CleaningStrategyAdapter
 
 
 # Test 4: strategy_exhaustive_cross_match
