@@ -1,4 +1,4 @@
-from isd_str_sdk.core import (
+from isd_str_sdk.str_cleaning import (
     StrFunc_ExcelACTable_UnionLetter_FOREIGN,
     StrFunc_ExcelACTable_UnionLetter_SCHOOL,
     StrFunc_ExcelACTable_UnionLetter_ALLOrg,

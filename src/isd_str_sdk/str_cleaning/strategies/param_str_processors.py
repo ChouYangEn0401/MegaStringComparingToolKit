@@ -1,4 +1,4 @@
-from src.isd_str_sdk.core.strategies.base_str_processors import *
+from src.isd_str_sdk.str_cleaning.strategies.base_str_processors import *
 
 
 class StrFuncWithPars_CaseConvert(StrProcessorWithParamBase):

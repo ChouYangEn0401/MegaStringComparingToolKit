@@ -1,5 +1,5 @@
-from isd_str_sdk.core.strategies.param_str_processors import *
-from isd_str_sdk.core.strategies.contexted_str_processors import *
+from isd_str_sdk.str_cleaning.strategies.param_str_processors import *
+from isd_str_sdk.str_cleaning.strategies.contexted_str_processors import *
 
 
 NOPARS_STRATEGY_TABLE = {

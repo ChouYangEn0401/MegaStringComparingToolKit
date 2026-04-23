@@ -4,7 +4,7 @@ from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
 
 from isd_str_sdk.base.AbstractStrategy import StrategyResult
 from isd_str_sdk.base.IStrProcessor import StrProcessorBase
-from isd_str_sdk.core import (
+from isd_str_sdk.str_cleaning import (
     StrFunc_Uppercase,
     StrFunc_AscendDictionaryOrder,
     StrFunc_KeepEnglishLetterAndDigits,

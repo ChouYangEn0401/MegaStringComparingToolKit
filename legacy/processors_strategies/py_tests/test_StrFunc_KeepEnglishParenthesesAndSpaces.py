@@ -1,4 +1,4 @@
-from isd_str_sdk.core import StrFunc_KeepEnglishParenthesesAndSpaces
+from isd_str_sdk.str_cleaning import StrFunc_KeepEnglishParenthesesAndSpaces
 from .run_strategy_tests import run_str_processor_test
 
 TESTS = [

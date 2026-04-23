@@ -5,7 +5,7 @@ from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
 
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
 from isd_str_sdk.base.IStrProcessor import StrProcessorBase
-from isd_str_sdk.core.StrProcessorsChain import StrProcessorsChain
+from isd_str_sdk.str_cleaning.StrProcessorsChain import StrProcessorsChain
 
 
 class FuzzyRatioStrategy(Strategy[TwoSeriesComparisonContext]):
