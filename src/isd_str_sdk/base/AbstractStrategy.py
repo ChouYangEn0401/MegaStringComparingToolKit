@@ -51,3 +51,30 @@ class AdvancedStrategy(Strategy[IComparisonContextFamily]):
         }
         return example
 
+
+
+############################################################################################################
+
+
+####
+# 目前發現：
+# 1. 我們需要 threashold: float, match_count: int 這兩種參數策略變體
+# 2. 另外是我們需要 precleaned 的策略變體，甚至是這邊可能需要用更乾淨的東西建立出來
+# 3. 再來是針對 nlp 可能會有多種參數 或者 模型，這邊需要乾淨的街口來統一所有的邏輯
+####
+
+from isd_str_sdk.utils.exceptions import MissingParameters
+from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContextWithStrategyPars
+
+class NewStrategy(Strategy[TwoSeriesComparisonContextWithStrategyPars], ABC):
+    def __init__(self, df1: str, df2: str, standard: float, strategy_parameters, **kwargs):
+        self.df1_col = df1
+        self.df2_col = df2
+        self.standard = standard
+        try:
+            self.keyword = strategy_parameters['keyword']
+        except KeyError:
+            ## will just broken if not provided with
+            raise MissingParameters(['keyword'])
+
+############################################################################################################

@@ -9,46 +9,18 @@
 from typing import Union
 import time
 
-from ...src.isd_str_sdk.base.AbstractNode import Node
 from .base.ComparisonEngine import ComparisonEngine
 from .base.GUITreeTraversalApp import GUITreeTraversalApp
 from .nodes import CompositeNode, LeafNode, PRISLeafNode
-from .stras import *
 from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
 
-# 將字串映射到對應的策略類別
-strategy_map = {
-    # operator
-    "OR": OrStrategy,
-    "AND": AndStrategy,
-    "NotOR": NotOrStrategy,
-    "NotAND": NotAndStrategy,
-    "**MultipleColumn_all_EXACT": None,
-    # exact compare
-    "EXACT": ExactMatchStrategy,
-    "IN": InStringStrategy,
-    # structural compare
-    "LetterLCS": LetterLCSStrategy,
-    "WordLCS": WordLCSStrategy,
-    "JACCARD": JaccardStrategy,
-    # fuzzy compare
-    "FUZZY": FuzzyRatioStrategy,
-    "Levenshtein": LevenshteinStrategy,
-    "JaroWinkler": JaroWinklerStrategy,
-    # AI compare
-    "Embedding": EmbeddingSimilarityStrategy,
-    # special compare
-    "PRIS_Tree": PRISTreeWalkingStrategy,
-    # testing
-    "NewJACCARDStrategy": NewJACCARDStrategy,
-    "(testing) NewStrategy": NewStrategy,
-}
+
 usable_methods_in_moduleDF_combo = [
     "EXACT", "IN",
     "LetterLCS", "WordLCS", "JACCARD", "NewJACCARDStrategy",
     "FUZZY", "Levenshtein", "JaroWinkler",
     "Embedding",
-    "(testing) NewStrategy",
+    "_on_dev_strategy_",
 ]
 
 

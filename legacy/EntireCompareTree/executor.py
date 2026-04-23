@@ -2,7 +2,7 @@ import pandas as pd
 from collections import deque
 
 from isd_str_sdk.base.AbstractNode import Node
-from .stras import *
+from ...src.isd_str_sdk.matching_tools.strategies.stras import *
 from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
 
 

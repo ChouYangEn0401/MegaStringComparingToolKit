@@ -1,4 +1,4 @@
-from legacy.EntireCompareTree.stras import MatchingStrategyAdapter
+from isd_str_sdk.utils.adapters import MatchingStrategyAdapter
 from .compare_strategy_test__1 import *
 from isd_str_sdk.core import CleaningStrategyAdapter
 
