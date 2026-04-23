@@ -1,5 +1,5 @@
-from src.lib.multi_condition_clean.EntireCompareTree.py_tests.run_strategy_tests import run_strategy_test
-from src.lib.multi_condition_clean.EntireCompareTree.stras import AbbrevExactMatchStrategy, PreprocessedAbbrevExactStrategy
+from isd_str_sdk.TDD.run_strategy_tests import run_strategy_test
+from isd_str_sdk.utils.adapters import AbbrevExactMatchStrategy, PreprocessedAbbrevExactStrategy
 
 TESTS = [
     ("National Taiwan University (NTU)", "National Taiwan University", True),
