@@ -5,11 +5,11 @@ from typing import Dict, List, Callable, Tuple, Any
 import pandas as pd
 import csv
 
-from src.lib.multi_condition_clean.EntireCompareTree.base.EngineBase import ComparisonEngineBase
+from .EngineBase import ComparisonEngineBase
 from src.hyper_framework.monitor.timer.FunctionTimerObject import LoopedFunction_timer_decorator, LoopedFunctionTimer
-from src.lib.multi_condition_clean.EntireCompareTree.draw import TreeVisualizer
-from src.lib.multi_condition_clean.EntireCompareTree.executor import TreeExecutor
-from src.lib.multi_condition_clean.EntireCompareTree.iterator_framework import UniversalIterator, IterationItem, LoopCoordinator
+from ..draw import TreeVisualizer
+from ..executor import TreeExecutor
+from ..iterator_framework import UniversalIterator, IterationItem, LoopCoordinator
 
 
 # 從這裡開始，GUITreeTraversalApp 成為一個專門的「視窗介面控制器」

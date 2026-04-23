@@ -2,8 +2,8 @@ from typing import List, Dict, Any
 import pandas as pd
 from dataclasses import dataclass
 
-from src.lib.multi_condition_clean.PRISTree.PRISTreeNodeBase import PRISTreeNode
-from src.lib.multi_condition_clean.EntireCompareTree.ab import IComparisonContext
+from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
+from .ab import IComparisonContext
 
 
 @dataclass

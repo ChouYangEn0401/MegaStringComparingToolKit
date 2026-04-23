@@ -5,9 +5,9 @@ from typing import Dict, Callable, Any, List, Tuple
 from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
 import csv
 
-from src.hyper_framework.decorators_pack import function_timer
-from src.lib.multi_condition_clean.EntireCompareTree.base.EngineBase import ComparisonEngineBase
-from src.lib.multi_condition_clean.EntireCompareTree.iterator_framework import UniversalIterator
+from isd_py_framework_sdk import function_timer
+from .EngineBase import ComparisonEngineBase
+from ..iterator_framework import UniversalIterator
 from src.hyper_framework.monitor.timer.FunctionTimerObject import MultiProcessLoopedFunctionTimer
 
 

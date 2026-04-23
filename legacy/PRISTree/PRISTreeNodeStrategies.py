@@ -1,7 +1,7 @@
 from typing import List
 
-from src.lib.multi_condition_clean.PRISTree.PRISTreeNodeBase import PRISTreeNode, PRISTreeNodeStrategy, OperationGatePRISTreeNodeStrategy
-from src.lib.processors_strategies.base.processor_base import StrProcessorBase
+from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode, PRISTreeNodeStrategy, OperationGatePRISTreeNodeStrategy
+from isd_str_sdk.base.IStrProcessor import StrProcessorBase
 
 # --- 邏輯運算子策略 ---
 class And_PRISTreeNodeStrategy(OperationGatePRISTreeNodeStrategy):

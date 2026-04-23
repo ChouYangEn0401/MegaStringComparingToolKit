@@ -9,12 +9,12 @@
 from typing import Union
 import time
 
-from src.lib.multi_condition_clean.EntireCompareTree.ab import Node
-from src.lib.multi_condition_clean.EntireCompareTree.base.ComparisonEngine import ComparisonEngine
-from src.lib.multi_condition_clean.EntireCompareTree.base.GUITreeTraversalApp import GUITreeTraversalApp
-from src.lib.multi_condition_clean.EntireCompareTree.nodes import CompositeNode, LeafNode, PRISLeafNode
-from src.lib.multi_condition_clean.EntireCompareTree.stras import *
-from src.lib.multi_condition_clean.PRISTree.PRISTreeNodeBase import PRISTreeNode
+from .ab import Node
+from .base.ComparisonEngine import ComparisonEngine
+from .base.GUITreeTraversalApp import GUITreeTraversalApp
+from .nodes import CompositeNode, LeafNode, PRISLeafNode
+from .stras import *
+from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
 
 # 將字串映射到對應的策略類別
 strategy_map = {

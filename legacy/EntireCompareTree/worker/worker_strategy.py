@@ -1,9 +1,9 @@
 import pandas as pd
 from typing import List, Tuple, Dict, Any, Type, Union
 
-from src.lib.multi_condition_clean.EntireCompareTree.ab import Strategy
-from src.lib.multi_condition_clean.EntireCompareTree.contexts import TwoSeriesComparisonContext
-from src.lib.multi_condition_clean.EntireCompareTree.stras import ExactMatchStrategy, AbbrevExactMatchStrategy
+from ..ab import Strategy
+from ..contexts import TwoSeriesComparisonContext
+from ..stras import ExactMatchStrategy, AbbrevExactMatchStrategy
 
 
 # -------------------------------------

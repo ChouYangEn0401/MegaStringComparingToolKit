@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageDraw, ImageFont
 
-from src.lib.multi_condition_clean.EntireCompareTree.ab import Node
+from .ab import Node
 
 
 # --- 樹狀圖視覺化工具 ---

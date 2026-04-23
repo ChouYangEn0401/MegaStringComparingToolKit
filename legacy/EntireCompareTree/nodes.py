@@ -1,8 +1,8 @@
 # --- 組合節點 (Composite Node) ---
 from typing import List
 
-from src.lib.multi_condition_clean.EntireCompareTree.ab import Node, Strategy, IComparisonContext
-from src.lib.multi_condition_clean.EntireCompareTree.contexts import TwoSeriesComparisonContext, ChildrenValueComparisonContext, PRISTreeStructureContext
+from .ab import Node, Strategy, IComparisonContext
+from .contexts import TwoSeriesComparisonContext, ChildrenValueComparisonContext, PRISTreeStructureContext
 
 
 # --- 具體節點實作 ---

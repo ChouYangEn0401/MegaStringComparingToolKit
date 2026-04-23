@@ -2,8 +2,8 @@
 
 from typing import Union
 
-from src.hyper_framework.CuriouslyRecurringTemplatePattern.Singleton import SingletonMetaclass
-from src.lib.processors_strategies.base.processor_base import IStrProcessorContext
+from isd_py_framework_sdk.interface import SingletonMetaclass
+from isd_str_sdk.base.IStrProcessorContext import IStrProcessorContext
 
 
 class ContextManager(SingletonMetaclass):

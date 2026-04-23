@@ -8,18 +8,32 @@ import numpy as np
 import re
 import inspect
 
-from src.hyper_framework.decorators_pack import deprecated
-from src.lib.multi_condition_clean.EntireCompareTree.ab import Strategy, AdvancedStrategy, StrategyResult, \
-    IComparisonContextFamily
-from src.lib.multi_condition_clean.EntireCompareTree.contexts import ChildrenValueComparisonContext, TwoSeriesComparisonContext, PRISTreeStructureContext, TwoSeriesComparisonContextWithStrategyPars
-from src.lib.processors_strategies.cleaning_module.str_processors import (
-    StrFunc_Uppercase,
-    StrFunc_AscendDictionaryOrder, StrFunc_NormalizeParentheses, StrFunc_NormalizeWhitespace,
-    StrFunc_KeepEnglishParenthesesAndSpaces, StrFunc_KeepEnglishLetterAndDigits,
-    StrFunc_ExcelACTable_UnionLetter_FOREIGN, StrFunc_Lowercase, StrFunc_ExcelACTable_UnionLetter_ALLOrg,
-    StrFunc_ExcelACTable_UnionLetter_STOPWORD
+from isd_py_framework_sdk.helpers.decorators.lifecycle import deprecated
+
+# Local package imports (legacy package structure)
+from .ab import Strategy, AdvancedStrategy, StrategyResult, IComparisonContextFamily
+from .contexts import (
+    ChildrenValueComparisonContext,
+    TwoSeriesComparisonContext,
+    PRISTreeStructureContext,
+    TwoSeriesComparisonContextWithStrategyPars,
 )
-from src.lib.processors_strategies.base.processor_base import StrProcessorBase, StrProcessorChain
+
+# String processors come from the current SDK package
+from isd_str_sdk.core import (
+    StrFunc_Uppercase,
+    StrFunc_AscendDictionaryOrder,
+    StrFunc_NormalizeParentheses,
+    StrFunc_NormalizeWhitespace,
+    StrFunc_KeepEnglishParenthesesAndSpaces,
+    StrFunc_KeepEnglishLetterAndDigits,
+    StrFunc_ExcelACTable_UnionLetter_FOREIGN,
+    StrFunc_Lowercase,
+    StrFunc_ExcelACTable_UnionLetter_ALLOrg,
+    StrFunc_ExcelACTable_UnionLetter_STOPWORD,
+)
+from isd_str_sdk.base.IStrProcessor import StrProcessorBase
+from isd_str_sdk.core.StrProcessorsChain import StrProcessorsChain
 
 # ### REFACTOR: 是否考慮將此 大library 進行拆分，以方便管理？ ###
 # ### REFACTOR: 是否考慮將此 大library 進行拆分，以方便管理？ ###
@@ -285,7 +299,7 @@ class PreprocessedAbbrevExactStrategy(AbbrevExactMatchStrategy):
 
     def __init__(self, df1, df2, standard: int = 1, processors: List[Type[StrProcessorBase]] = None, **kwargs):
         super().__init__(df1, df2, standard)
-        self.chain = StrProcessorChain(processors or self.DEFAULT_PROCESSORS)
+        self.chain = StrProcessorsChain(processors or self.DEFAULT_PROCESSORS)
 
     def _normalization(self, text) -> str:
         return self.chain.run(str(text))
@@ -304,7 +318,7 @@ class PreprocessedExactMatchStrategy(ExactMatchStrategy):
 
     def __init__(self, df1: str, df2: str, standard: Any, processors: List[Type[StrProcessorBase]] = None, **kwargs):
         super().__init__(df1, df2, standard)
-        self.chain = StrProcessorChain(processors or self.DEFAULT_PROCESSORS)
+        self.chain = StrProcessorsChain(processors or self.DEFAULT_PROCESSORS)
 
     def _normalization(self, text) -> str:
         return self.chain.run(str(text))
@@ -439,7 +453,7 @@ class PreprocessedFuzzyRatioStrategy(Strategy[TwoSeriesComparisonContext]):
     DEFAULT_PROCESSORS = []
     def __init__(self, df1: str, df2: str, standard: Any, processors: List[Type[StrProcessorBase]] = None, **kwargs):
         super().__init__(df1, df2, standard)
-        self.chain = StrProcessorChain(processors or self.DEFAULT_PROCESSORS)
+        self.chain = StrProcessorsChain(processors or self.DEFAULT_PROCESSORS)
     def _normalization(self, text) -> str:
         return self.chain.run(str(text))
     def evaluate(self, context: IComparisonContextFamily) -> StrategyResult:

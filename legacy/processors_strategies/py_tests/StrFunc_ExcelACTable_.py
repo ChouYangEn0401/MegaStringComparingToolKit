@@ -1,7 +1,10 @@
-from src.lib.processors_strategies.cleaning_module.str_processors import StrFunc_ExcelACTable_UnionLetter_FOREIGN, \
-    StrFunc_ExcelACTable_UnionLetter_SCHOOL, StrFunc_ExcelACTable_UnionLetter_ALLOrg, \
-    StrFunc_ExcelACTable_UnionLetter_STOPWORD
-from src.lib.processors_strategies.py_tests.run_strategy_tests import run_str_processor_test
+from isd_str_sdk.core import (
+    StrFunc_ExcelACTable_UnionLetter_FOREIGN,
+    StrFunc_ExcelACTable_UnionLetter_SCHOOL,
+    StrFunc_ExcelACTable_UnionLetter_ALLOrg,
+    StrFunc_ExcelACTable_UnionLetter_STOPWORD,
+)
+from .run_strategy_tests import run_str_processor_test
 
 
 def test001():

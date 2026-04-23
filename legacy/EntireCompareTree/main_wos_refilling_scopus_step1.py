@@ -2,7 +2,7 @@ import time
 from typing import Tuple, List, Dict
 import pandas as pd
 
-from src.lib.multi_condition_clean.EntireCompareTree.core import try_run, merge_refined_result_with_dataframe_pathes
+from legacy.EntireCompareTree.core import try_run, merge_refined_result_with_dataframe_pathes
 
 def ScopusRefilling():
     return {

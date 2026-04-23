@@ -1,9 +1,9 @@
 import pandas as pd
 from collections import deque
 
-from src.lib.multi_condition_clean.EntireCompareTree.ab import Node
-from src.lib.multi_condition_clean.EntireCompareTree.stras import *
-from src.lib.multi_condition_clean.PRISTree.PRISTreeNodeBase import PRISTreeNode
+from .ab import Node
+from .stras import *
+from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
 
 
 class TreeExecutor:
