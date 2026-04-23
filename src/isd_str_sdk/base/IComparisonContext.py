@@ -16,6 +16,7 @@ class IComparisonContext(ABC):
     """
     用來在遍歷樹時傳遞所有外部資料。
     """
+    __slots__ = ()  # 讓子類 @dataclass(slots=True) 能真正消除 __dict__
     pass
 IComparisonContextFamily = TypeVar("ContextType", bound=IComparisonContext)
 

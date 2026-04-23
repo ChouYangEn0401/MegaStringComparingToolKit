@@ -9,7 +9,7 @@
 from typing import Union
 import time
 
-from .ab import Node
+from ...src.isd_str_sdk.base.AbstractNode import Node
 from .base.ComparisonEngine import ComparisonEngine
 from .base.GUITreeTraversalApp import GUITreeTraversalApp
 from .nodes import CompositeNode, LeafNode, PRISLeafNode

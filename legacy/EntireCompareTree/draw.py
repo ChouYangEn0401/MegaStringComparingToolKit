@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageDraw, ImageFont
 
-from .ab import Node
+from ...src.isd_str_sdk.base.AbstractNode import Node
 
 
 # --- 樹狀圖視覺化工具 ---

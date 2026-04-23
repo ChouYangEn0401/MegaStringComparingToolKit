@@ -21,7 +21,7 @@ class Strategy(Generic[IComparisonContextFamily], ABC):
         return self.evaluate(context).success
 
 
-@dataclass
+@dataclass(slots=True)
 class StrategyResult:
     success: bool
     score: float | None = None

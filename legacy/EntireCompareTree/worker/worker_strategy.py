@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import List, Tuple, Dict, Any, Type, Union
 
-from ..ab import Strategy
+from ....src.isd_str_sdk.base.AbstractNode import Strategy
 from ..contexts import TwoSeriesComparisonContext
 from ..stras import ExactMatchStrategy, AbbrevExactMatchStrategy
 

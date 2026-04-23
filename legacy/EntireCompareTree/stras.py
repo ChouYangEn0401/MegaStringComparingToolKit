@@ -11,7 +11,8 @@ import inspect
 from isd_py_framework_sdk.helpers.decorators.lifecycle import deprecated
 
 # Local package imports (legacy package structure)
-from .ab import Strategy, AdvancedStrategy, StrategyResult, IComparisonContextFamily
+from isd_str_sdk.base.AbstractStrategy import Strategy, AdvancedStrategy, StrategyResult
+from isd_str_sdk.base.IComparisonContext import IComparisonContextFamily
 from .contexts import (
     ChildrenValueComparisonContext,
     TwoSeriesComparisonContext,

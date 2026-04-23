@@ -3,29 +3,29 @@ import pandas as pd
 from dataclasses import dataclass
 
 from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
-from .ab import IComparisonContext
+from isd_str_sdk.base.IComparisonContext import IComparisonContext
 
 
-@dataclass
+@dataclass(slots=True)
 class TwoSeriesComparisonContext(IComparisonContext):
     """
     用來在遍歷樹時傳遞兩個row比較的外部資料。
     """
     row1: pd.Series
     row2: pd.Series
-@dataclass
+@dataclass(slots=True)
 class TwoSeriesComparisonContextWithStrategyPars(TwoSeriesComparisonContext):
     """
     額外加入一些可以用來設定策略的參數
     """
     stra_pars: Dict[str, Any]
-@dataclass
+@dataclass(slots=True)
 class ChildrenValueComparisonContext(IComparisonContext):
     """
     用來在遍歷樹時傳遞子節點的判定結果，屬於內部資料。
     """
     children_results: List[bool]
-@dataclass
+@dataclass(slots=True)
 class PRISTreeStructureContext(IComparisonContext):
     """
     用來在遍歷樹時傳遞"PRIS舊的樹物件"，把邏輯拆出去，我這邊就不會被搞壞。

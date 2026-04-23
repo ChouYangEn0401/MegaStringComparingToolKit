@@ -1,7 +1,7 @@
 import pandas as pd
 from collections import deque
 
-from .ab import Node
+from isd_str_sdk.base.AbstractNode import Node
 from .stras import *
 from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
 
