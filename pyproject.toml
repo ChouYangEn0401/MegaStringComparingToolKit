@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "{project_name}"
-version = "0.0.0"
-description = "{desc}"
+name = "isd-str-sdk"
+dynamic = ["version"]
+description = "ISD String Comparing Toolkit (Python)"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "周暘恩", email = "chouyangen0401@ntu.edu.tw" },
     { name = "Anthony Chou", email = "mi.anthony.chou@gmail.com" },
@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "rapidfuzz>=3.0",
     "regex>=2023.0",
+    "pandas>=2.0",
 ]
 
 [tool.setuptools]
@@ -24,6 +25,9 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "isd_str_sdk._version.__version__" }
 
 [project.optional-dependencies]
 # 安裝方式 pip install {project_name}[dev]
