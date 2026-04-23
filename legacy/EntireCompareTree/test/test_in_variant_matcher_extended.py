@@ -1,4 +1,4 @@
-from isd_str_compare.legacy.EntireCompareTree.test.in_variant_matcher import (
+from legacy.EntireCompareTree.test.in_variant_matcher import (
     score_candidate,
     rank_candidates,
     rank_typo_candidates,

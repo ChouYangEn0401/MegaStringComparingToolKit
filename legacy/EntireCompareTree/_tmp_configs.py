@@ -1,3 +1,4 @@
+## NA回填任務0911有用到
 def default_001():
     return {
         "Rules": [
@@ -86,19 +87,7 @@ def default_001():
         ]
     }
 
-
-def PRIS_Tree():
-    return {
-        "Rules": [
-            "OR",
-            {
-                "PRIS_Tree": {
-                    "df1_col": "Address",
-                },
-            },
-        ]
-    }
-
+## NA回填任務0911有用到
 def TestRealData():
     return {
         "Rules": [
@@ -126,6 +115,7 @@ def TestRealData():
         ]
     }
 
+## NA回填任務0911有用到
 def test_003_error_tracing():
     return {
         "Rules": [
@@ -159,3 +149,17 @@ def test_003_error_tracing():
             },
         ]
     }
+
+## 一級權控清理裡面有用到
+def PRIS_Tree():
+    return {
+        "Rules": [
+            "OR",
+            {
+                "PRIS_Tree": {
+                    "df1_col": "Address",
+                },
+            },
+        ]
+    }
+

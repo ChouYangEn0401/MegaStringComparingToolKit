@@ -1,4 +1,4 @@
-from isd_str_compare.legacy.EntireCompareTree.test.in_variant_matcher import rank_candidates, score_candidate
+from legacy.EntireCompareTree.test.in_variant_matcher import rank_candidates, score_candidate
 
 
 def test_case_1_typo_ranking():

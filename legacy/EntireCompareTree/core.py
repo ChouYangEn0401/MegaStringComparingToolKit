@@ -99,7 +99,9 @@ def build_tree(config_rule: Union[str, Dict, List], parent_params: Dict = None) 
 def try_run(
         df1: pd.DataFrame, df2: pd.DataFrame, config_rule: Dict,
         b_open_gui_window = False, b_debug_mode = False,
+        # ### REFACTOR: this code should use relative path, or it may contaminate core lib space ###
         output_file_path = "wsr_report_raw.csv"
+        # ### REFACTOR: this code should use relative path, or it may contaminate core lib space ###
 ):
     path = ""
     if b_open_gui_window:
