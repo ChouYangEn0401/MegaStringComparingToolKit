@@ -3,7 +3,7 @@ from pathlib import Path
 from enum import IntFlag, auto
 from typing import Dict
 
-from src.isd_str_sdk.base.IStrProcessorContext import IStrProcessorContext
+from isd_str_sdk.base.IStrProcessorContext import IStrProcessorContext
 
 
 class UnionLetterExcelACTableContext(IStrProcessorContext):

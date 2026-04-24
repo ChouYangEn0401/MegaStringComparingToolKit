@@ -2,8 +2,8 @@ from functools import wraps
 from abc import ABC, abstractmethod
 from typing import Union, Generic, TypeVar
 
-from src.isd_str_sdk.base.IStrProcessor import IStrProcessor, StrProcessorBase, StrProcessorWithContextBase
-from src.isd_str_sdk.base.IStrProcessorContext import IStrProcessorContext, UnACWordContext
+from isd_str_sdk.base.IStrProcessor import IStrProcessor, StrProcessorBase
+from isd_str_sdk.base.IStrProcessorContext import IStrProcessorContext, UnACWordContext
 from isd_str_sdk.utils.decorators import type_guard_for_pars_advanced
 from isd_py_framework_sdk.assertions import assert__is_list_of_str, assert__is_list_of_list_of_str, assert__is_str, assert__is_list_of_tuple_of_str
 

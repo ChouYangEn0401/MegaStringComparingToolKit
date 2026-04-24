@@ -7,9 +7,9 @@ from isd_py_framework_sdk.exceptions import WrongOptionException
 from isd_py_framework_sdk.decorators import old_method
 
 from isd_str_sdk.str_cleaning.strategies.StrProcessorWiths import StrProcessorWithListStrParam, StrProcessorWithListTupleStrParam
-from src.isd_str_sdk.base.IStrProcessor import StrProcessorBase, StrProcessorWithParamBase
-from src.isd_str_sdk.utils.decorators import enforce_types, enforce_types_with_pars_check
-from src.isd_str_sdk.str_cleaning.strategies.pre_contexted.actable_str_processor import UnionLetterExcelACTableContext
+from isd_str_sdk.base.IStrProcessor import StrProcessorBase, StrProcessorWithParamBase
+from isd_str_sdk.utils.decorators import enforce_types, enforce_types_with_pars_check
+from isd_str_sdk.str_cleaning.strategies.pre_contexted.actable_str_processor import UnionLetterExcelACTableContext
 
 
 class StrFuncNoop(StrProcessorBase):

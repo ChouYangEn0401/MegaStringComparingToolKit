@@ -1,16 +1,16 @@
-from isd_str_sdk.matching_tools.strategies.undone.quantity_groups import NewJACCARDStrategy
+from isd_str_sdk.str_matching.strategies.undone.quantity_groups import NewJACCARDStrategy
 from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext, TwoSeriesComparisonContextWithStrategyPars
 
-from isd_str_sdk.matching_tools.strategies.logic_gate import OrStrategy, AndStrategy, NotOrStrategy, NotAndStrategy
-from isd_str_sdk.matching_tools.strategies.exact_matching import ExactMatchStrategy
-from isd_str_sdk.matching_tools.strategies.structure_matching import InStringStrategy, TwoSideInStringStrategy, TwoSideInWith3WordsStringStrategy
-from isd_str_sdk.matching_tools.strategies.structure_matching import LetterLCSStrategy, WordLCSStrategy, JaccardStrategy
-from isd_str_sdk.matching_tools.strategies.fuzzy_matching import FuzzyRatioStrategy, LevenshteinStrategy, JaroWinklerStrategy
-from isd_str_sdk.matching_tools.strategies.nlp_matching import EmbeddingSimilarityStrategy
-from isd_str_sdk.matching_tools.strategies.pris_integration import PRISTreeWalkingStrategy
-from isd_str_sdk.matching_tools.strategies.hybrid_matching import PreprocessedExactMatchStrategy
-from isd_str_sdk.matching_tools.strategies.undone.OnDenStrategy import OnDevStrategy
-from isd_str_sdk.matching_tools.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy
+from isd_str_sdk.str_matching.strategies.logic_gate import OrStrategy, AndStrategy, NotOrStrategy, NotAndStrategy
+from isd_str_sdk.str_matching.strategies.exact_matching import ExactMatchStrategy
+from isd_str_sdk.str_matching.strategies.structure_matching import InStringStrategy, TwoSideInStringStrategy, TwoSideInWith3WordsStringStrategy
+from isd_str_sdk.str_matching.strategies.structure_matching import LetterLCSStrategy, WordLCSStrategy, JaccardStrategy
+from isd_str_sdk.str_matching.strategies.fuzzy_matching import FuzzyRatioStrategy, LevenshteinStrategy, JaroWinklerStrategy
+from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
+from isd_str_sdk.str_matching.strategies.pris_integration import PRISTreeWalkingStrategy
+from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
+from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
+from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy
 
 
 # 將字串映射到對應的策略類別
