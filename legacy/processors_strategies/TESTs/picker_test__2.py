@@ -1,4 +1,4 @@
-from isd_str_sdk.utils.adapters import MatchingStrategyAdapter
+from isd_str_sdk.str_matching.adapters import MatchingStrategyAdapter
 from .compare_strategy_test__1 import *
 from isd_str_sdk.str_cleaning import CleaningStrategyAdapter
 

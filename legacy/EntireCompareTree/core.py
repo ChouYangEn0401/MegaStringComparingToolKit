@@ -15,7 +15,7 @@ from .base.ComparisonEngine import ComparisonEngine
 from .base.GUITreeTraversalApp import GUITreeTraversalApp
 from .nodes import CompositeNode, LeafNode, PRISLeafNode
 from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
-from isd_str_sdk.utils.adapters import STRATEGY_TABLE
+from isd_str_sdk.str_matching.adapters import STRATEGY_TABLE
 
 
 usable_methods_in_moduleDF_combo = [

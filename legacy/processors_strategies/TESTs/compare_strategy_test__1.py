@@ -1,4 +1,4 @@
-from isd_str_sdk.utils.adapters import MatchingStrategyAdapter
+from isd_str_sdk.str_matching.adapters import MatchingStrategyAdapter
 from isd_str_sdk.str_cleaning import CleaningStrategyAdapter
 from legacy.processors_strategies.utils import *
 
