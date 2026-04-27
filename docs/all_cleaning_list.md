@@ -1,94 +1,222 @@
 # 字串清理函式總覽
 
-> 所有清理函式位於 `isd_str_sdk.str_cleaning.strategies`。  
-> 使用方式有兩種：**直接實例化**，或透過 **CleaningStrategyAdapter**（僅限無參數策略及有參數策略各自的方式）。
+本文件由淺入深介紹所有清理函式。**初學者看前兩節就夠。**
 
 ---
 
-## 無參數清理函式（No-param processors）
-
-位於 `strategies/base_str_processors.py`（部分來自 `contexted_str_processors.py`）。
-
-用法：`ClassName("輸入字串").get_result()`
-
-| 函式名稱 | 說明 | 範例輸入 → 輸出 |
-|---|---|---|
-| `StrFuncNoop` | 不做任何處理，原樣回傳 | `"hello"` → `"hello"` |
-| `StrFunc_Lowercase` | 轉為全小寫 | `"HELLO"` → `"hello"` |
-| `StrFunc_Uppercase` | 轉為全大寫 | `"hello"` → `"HELLO"` |
-| `StrFunc_SentenceCapitalization` | 句首大寫，其餘小寫 | `"hello world"` → `"Hello world"` |
-| `StrFunc_WordsCapitalization` | 每個字詞首字母大寫 | `"hello world"` → `"Hello World"` |
-| `StrFunc_KeepEnglishLetter` | 只保留英文字母 a-z A-Z | `"abc123!"` → `"abc"` |
-| `StrFunc_KeepDigits` | 只保留數字 0-9 | `"abc123def"` → `"123"` |
-| `StrFunc_KeepEnglishLetterAndDigits` | 保留英文字母與數字 | `"abc 123!"` → `"abc123"` |
-| `StrFunc_KeepEnglishWordsAndSpaces` | 保留英文字母與空白 | `"hello 123!"` → `"hello "` |
-| `StrFunc_RemoveAllSymbols` | 移除所有符號，保留字母與數字 | `"hello, world!"` → `"helloworld"` |
-| `StrFunc_NormalizeSpacingBetweenWords` | 連續空白（含 tab/換行）縮減為單一空白 | `"hello   world"` → `"hello world"` |
-| `StrFunc_NormalizeUnicodeSpacing` | Unicode 空白字元（全形空白等）正規化為半形 | `"hello　world"` → `"hello world"` |
-| `StrFunc_StripSymbols` | 去除字串前後空白 | `"  hello  "` → `"hello"` |
-| `StrFunc_AscendDictionaryOrder` | 字詞按字典序升序排列 | `"banana apple"` → `"apple banana"` |
-| `StrFunc_DescendDictionaryOrder` | 字詞按字典序降序排列 | `"apple banana"` → `"banana apple"` |
-| `StrFunc_RemoveHtmlTags` | 移除 HTML 標籤 | `"<b>text</b>"` → `"text"` |
-| `StrFunc_CleanEscapedSymbols` | 移除轉義符號（`\"` `\'` `\\`）與引號 | `"\\\"hello\\\""` → `"hello"` |
-| `StrFunc_NormalizeParentheses` | ⚠️ 括號正規化（含全形→半形）**已標記為舊版，目前有已知 bug** | `"（hello）"` → `"(hello)"` |
-| `StrFunc_NormalizeWhitespace` | 正規化空白（含 Unicode）並去除前後空白 | `"  hello   world  "` → `"hello world"` |
-| `StrFunc_KeepEnglishParenthesesAndSpaces` | 保留英文字母、半形括號、空白 | `"hello (world) 123!"` → `"hello (world) "` |
-| `StrFunc_ExcelACTable_Base` | Excel 對照表替換基礎類別（需搭配 AC table 子類使用） | — |
-| `StrFunc_RemoveUpperCaseStopwords` | 移除全大寫英文停止詞（冠詞、介詞、連詞等） | `"THE University OF Taiwan"` → `"University Taiwan"` |
-
-> **注意**：`StrFunc_NormalizeParentheses` 標記了 `@old_method` decorator，目前 `isd_py_framework_sdk` 的 `OldWarning` 未定義，呼叫時會拋出 `NameError`。
-
----
-
-## 有參數清理函式（Param processors）
-
-位於 `strategies/param_str_processors.py`。
-
-用法：`ClassName("輸入字串").get_result(參數)`
-
-| 函式名稱 | 參數類型 | 說明 | 範例 |
-|---|---|---|---|
-| `StrFuncWithPars_CaseConvert` | `str`：`"upper"` / `"大寫"` / `"lower"` / `"小寫"` | 指定大小寫轉換方向 | `.get_result("upper")` → 全大寫 |
-| `StrFunc_Capitalize` | `str`：`"sentence"` / `"句子"` / `"words"` / `"每個字詞片段"` | 指定首字母大寫模式 | `.get_result("words")` → 每詞大寫 |
-| `StrFuncWithPars_RemoveSpecificSymbol` | `List[str]`：要移除的符號清單 | 移除清單中指定的每個符號 | `.get_result(["@", "#"])` |
-| `StrFunc_SortWordsWithDictionaryOrder` | `str`：`"ascend"` / `"升序"` / `"descend"` / `"降序"` | 字詞排序方向 | `.get_result("descend")` |
-| `StrFunc_ReplaceInputToNothing` | `List[str]`：要刪除的子字串清單 | 將清單中每個子字串從輸入中刪除 | `.get_result(["and", "or"])` |
-| `StrFunc_ReplaceInputToSomething` | `List[Tuple[str, str]]`：`(舊字串, 新字串)` 清單 | 批次替換子字串 | `.get_result([("MIT", "N.T.U.")])` |
-| `StrFunc_MultipleKeepLogic` | `List[str]`：保留類型 — `"英文"` `"數字"` `"符號"` `"字間空白"` `"句首末空白"` | 指定要保留的字元類型（OR 組合） | `.get_result(["英文", "數字"])` |
-
----
-
-## CleaningStrategyAdapter（統一入口）
+## ⭐ 快速上手 — 一行搞定最常用清理
 
 ```python
 from isd_str_sdk.str_cleaning import CleaningStrategyAdapter
 
-# 無參數策略
-adapter = CleaningStrategyAdapter("StrFunc_Lowercase")
-result = adapter.run("HELLO WORLD")           # -> "hello world"
+# 空白正規化（最常用）
+CleaningStrategyAdapter("StrFunc_NormalizeWhitespace").run("  Hello   World  ")
+# -> "Hello World"
 
-# 有參數策略（傳入 pars）
-adapter = CleaningStrategyAdapter("StrFuncWithPars_RemoveSpecificSymbol")
-result = adapter.run("h@ello!", pars=["@", "!"])  # -> "hello"
+# 轉小寫
+CleaningStrategyAdapter("StrFunc_Lowercase").run("HELLO WORLD")
+# -> "hello world"
+
+# 移除 HTML 標籤
+CleaningStrategyAdapter("StrFunc_RemoveHtmlTags").run("<b>hello</b> <i>world</i>")
+# -> "hello world"
+
+# 只保留英文字母與數字
+CleaningStrategyAdapter("StrFunc_KeepEnglishLetterAndDigits").run("abc 123!@#")
+# -> "abc123"
 ```
 
 ---
 
-## StrProcessorChain / StrProcessorsChain（鏈式組合）
+## 🧹 全部無參數清理函式
+
+用法：`CleaningStrategyAdapter("函式名稱").run("輸入字串")`  
+或直接：`StrFunc_Xxx("輸入字串").get_result()`
+
+### 大小寫
+
+| 函式名稱 | 說明 | 輸入 → 輸出 |
+|---|---|---|
+| `StrFuncNoop` | 不做任何處理 | `"hello"` → `"hello"` |
+| `StrFunc_Lowercase` | 全部轉小寫 | `"HELLO World"` → `"hello world"` |
+| `StrFunc_Uppercase` | 全部轉大寫 | `"hello world"` → `"HELLO WORLD"` |
+| `StrFunc_SentenceCapitalization` | 句首大寫，其餘小寫 | `"HELLO WORLD"` → `"Hello world"` |
+| `StrFunc_WordsCapitalization` | 每個字詞首字母大寫 | `"hello world foo"` → `"Hello World Foo"` |
+
+### 字元過濾（只留下你要的）
+
+| 函式名稱 | 說明 | 輸入 → 輸出 |
+|---|---|---|
+| `StrFunc_KeepEnglishLetter` | 只留英文字母 | `"abc 123!"` → `"abc"` |
+| `StrFunc_KeepDigits` | 只留數字 | `"abc123def456"` → `"123456"` |
+| `StrFunc_KeepEnglishLetterAndDigits` | 只留英文字母與數字 | `"abc 123!"` → `"abc123"` |
+| `StrFunc_KeepEnglishWordsAndSpaces` | 只留英文字母與空白 | `"hello 123!"` → `"hello "` |
+| `StrFunc_KeepEnglishParenthesesAndSpaces` | 只留英文字母、半形括號、空白 | `"hello (world) 123!"` → `"hello (world) "` |
+| `StrFunc_RemoveAllSymbols` | 移除所有符號，保留字母與數字 | `"hello, world!"` → `"helloworld"` |
+
+### 空白處理
+
+| 函式名稱 | 說明 | 輸入 → 輸出 |
+|---|---|---|
+| `StrFunc_StripSymbols` | 去除字串前後空白 | `"  hello  "` → `"hello"` |
+| `StrFunc_NormalizeSpacingBetweenWords` | 連續空白（含 tab/換行）縮為單一空白 | `"hello\t\nworld"` → `"hello world"` |
+| `StrFunc_NormalizeUnicodeSpacing` | Unicode 空白字元（全形空白等）轉半形 | `"hello　world"` → `"hello world"` |
+| `StrFunc_NormalizeWhitespace` | **最推薦**：Unicode 空白正規化 + 去前後空白（以上三者合體） | `"  hello　 world  "` → `"hello world"` |
+
+### 特殊文字處理
+
+| 函式名稱 | 說明 | 輸入 → 輸出 |
+|---|---|---|
+| `StrFunc_RemoveHtmlTags` | 移除 HTML 標籤 | `"<b>text</b>"` → `"text"` |
+| `StrFunc_CleanEscapedSymbols` | 移除轉義符號與引號（`\"` `\'` `\\`） | `"\\\"hello\\\""` → `"hello"` |
+| `StrFunc_RemoveUpperCaseStopwords` | 移除全大寫停止詞（THE / OF / AND…） | `"THE University OF Taiwan"` → `"University Taiwan"` |
+| `StrFunc_NormalizeParentheses` | ⚠️ 全形括號→半形（目前有已知 bug，建議避免使用） | `"（hello）"` → `"(hello)"` |
+
+### 排序
+
+| 函式名稱 | 說明 | 輸入 → 輸出 |
+|---|---|---|
+| `StrFunc_AscendDictionaryOrder` | 字詞按字典序升序排列 | `"banana apple cherry"` → `"apple banana cherry"` |
+| `StrFunc_DescendDictionaryOrder` | 字詞按字典序降序排列 | `"apple banana cherry"` → `"cherry banana apple"` |
+
+### 進階：Excel 對照表替換
+
+| 函式名稱 | 說明 |
+|---|---|
+| `StrFunc_ExcelACTable_Base` | 基礎類別（需搭配子類使用），透過外部 Excel 對照表做字詞替換 |
+
+---
+
+## 🔗 鏈式組合（StrProcessorsChain）
+
+多個清理步驟可以串接，**按照陣列順序依序執行**：
 
 ```python
 from isd_str_sdk.base.StrProcessorsChain import StrProcessorsChain
 from isd_str_sdk.str_cleaning.strategies.base_str_processors import (
-    StrFunc_Lowercase, StrFunc_NormalizeWhitespace, StrFunc_StripSymbols
+    StrFunc_NormalizeWhitespace,
+    StrFunc_Lowercase,
+    StrFunc_KeepEnglishWordsAndSpaces,
 )
 
 chain = StrProcessorsChain([
-    StrFunc_NormalizeWhitespace,
-    StrFunc_Lowercase,
-    StrFunc_StripSymbols,
+    StrFunc_NormalizeWhitespace,      # 步驟 1：空白正規化
+    StrFunc_Lowercase,                # 步驟 2：轉小寫
+    StrFunc_KeepEnglishWordsAndSpaces,# 步驟 3：只留英文與空白
 ])
-result = chain.run("  HELLO   World  ")  # -> "hello world"
 
-# 動態新增
-chain.add_method(StrFunc_KeepEnglishLetter)
+result = chain.run("  Hello 123 World!  ")
+# -> "hello  world"
 ```
+
+動態加入步驟：
+
+```python
+chain.add_method(StrFunc_StripSymbols)
+```
+
+---
+
+## ⚙️ 有參數清理函式（Param processors）
+
+這類函式需要在 `get_result()` 時傳入參數，`CleaningStrategyAdapter` 也支援透過 `pars=` 傳遞。
+
+用法：`ClassName("輸入字串").get_result(參數)`
+
+### 大小寫轉換
+
+```python
+StrFuncWithPars_CaseConvert("hello").get_result("upper")  # -> "HELLO"
+StrFuncWithPars_CaseConvert("HELLO").get_result("小寫")   # -> "hello"
+# 可用值："upper" / "大寫"、"lower" / "小寫"
+
+StrFunc_Capitalize("hello world").get_result("words")    # -> "Hello World"
+StrFunc_Capitalize("hello world").get_result("句子")     # -> "Hello world"
+# 可用值："sentence" / "句子"、"words" / "每個字詞片段"
+```
+
+### 移除指定符號
+
+```python
+StrFuncWithPars_RemoveSpecificSymbol("h@e#llo!").get_result(["@", "#", "!"])
+# -> "hello"
+
+# 透過 Adapter
+CleaningStrategyAdapter("StrFuncWithPars_RemoveSpecificSymbol").run("h@llo!", pars=["@", "!"])
+# -> "hllo"
+```
+
+### 字詞排序
+
+```python
+StrFunc_SortWordsWithDictionaryOrder("banana apple cherry").get_result("ascend")
+# -> "apple banana cherry"
+StrFunc_SortWordsWithDictionaryOrder("apple banana cherry").get_result("降序")
+# -> "cherry banana apple"
+# 可用值："ascend" / "升序"、"descend" / "降序"
+```
+
+### 子字串替換
+
+```python
+# 刪除指定子字串
+StrFunc_ReplaceInputToNothing("the quick brown fox").get_result(["quick ", "brown "])
+# -> "the fox"
+
+# 替換為指定字串
+StrFunc_ReplaceInputToSomething("foo bar baz").get_result([("foo", "one"), ("bar", "two")])
+# -> "one two baz"
+```
+
+### 複合保留邏輯
+
+根據語意類型保留字元，支援 OR 組合：
+
+```python
+StrFunc_MultipleKeepLogic("hello 123!").get_result(["英文"])           # -> "hello"
+StrFunc_MultipleKeepLogic("hello 123!").get_result(["數字"])           # -> "123"
+StrFunc_MultipleKeepLogic("hello 123!").get_result(["英文", "數字"])   # -> "hello123"
+StrFunc_MultipleKeepLogic("hello 123!").get_result(["英文", "字間空白"]) # -> "hello"
+# 可用類型："英文" / "數字" / "符號" / "字間空白" / "句首末空白"
+```
+
+### 有參數函式速查表
+
+| 函式名稱 | 參數類型 | 說明 |
+|---|---|---|
+| `StrFuncWithPars_CaseConvert` | `str` | 指定大小寫方向 |
+| `StrFunc_Capitalize` | `str` | 指定首字母大寫模式 |
+| `StrFuncWithPars_RemoveSpecificSymbol` | `List[str]` | 移除指定符號清單 |
+| `StrFunc_SortWordsWithDictionaryOrder` | `str` | 指定排序方向 |
+| `StrFunc_ReplaceInputToNothing` | `List[str]` | 刪除指定子字串清單 |
+| `StrFunc_ReplaceInputToSomething` | `List[Tuple[str, str]]` | 批次替換子字串 |
+| `StrFunc_MultipleKeepLogic` | `List[str]` | 指定保留字元類型（OR 組合） |
+
+---
+
+## 🏗️ 底層架構（給開發者）
+
+所有清理函式繼承自兩個基底類別：
+
+| 基底類別 | 用途 | 實作方法 |
+|---|---|---|
+| `StrProcessorBase` | 無參數處理器 | `_handle(self) -> str` |
+| `StrProcessorWithParamBase` | 有參數處理器 | `_handle(self, param) -> str` |
+
+呼叫方式統一為 `instance.get_result()` 或 `instance.get_result(param)`。
+
+新增自訂清理函式並登錄到 Adapter：
+
+```python
+from isd_str_sdk.base.IStrProcessor import StrProcessorBase
+from isd_str_sdk.utils.decorators import enforce_types
+
+class MyCustomCleaner(StrProcessorBase):
+    @enforce_types(str, str)
+    def _handle(self) -> str:
+        return self.input_str.replace("foo", "bar")
+
+# 登錄到 NOPARS_STRATEGY_TABLE（str_cleaning/__init__.py）
+NOPARS_STRATEGY_TABLE["MyCustomCleaner"] = MyCustomCleaner
+```
+
