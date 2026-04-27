@@ -301,22 +301,18 @@ class TestStrFunc_CleanEscapedSymbols:
 # a NameError in isd_py_framework_sdk <= 0.3.2 (OldWarning not defined).
 # Mark these as xfail until the dependency is fixed.
 class TestStrFunc_NormalizeParentheses:
-    @pytest.mark.xfail(reason="@old_method decorator bug in isd_py_framework_sdk: OldWarning not defined", strict=True)
     def test_full_width_parentheses(self):
         result = StrFunc_NormalizeParentheses("（hello）").get_result()
         assert result == "(hello)"
 
-    @pytest.mark.xfail(reason="@old_method decorator bug in isd_py_framework_sdk: OldWarning not defined", strict=True)
     def test_square_brackets(self):
         result = StrFunc_NormalizeParentheses("[hello]").get_result()
         assert result == "(hello)"
 
-    @pytest.mark.xfail(reason="@old_method decorator bug in isd_py_framework_sdk: OldWarning not defined", strict=True)
     def test_curly_braces(self):
         result = StrFunc_NormalizeParentheses("{hello}").get_result()
         assert result == "(hello)"
 
-    @pytest.mark.xfail(reason="@old_method decorator bug in isd_py_framework_sdk: OldWarning not defined", strict=True)
     def test_half_width_unchanged(self):
         result = StrFunc_NormalizeParentheses("(hello)").get_result()
         assert result == "(hello)"

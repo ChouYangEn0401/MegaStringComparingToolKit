@@ -7,7 +7,9 @@ from isd_str_sdk.str_matching.strategies.structure_matching import InStringStrat
 from isd_str_sdk.str_matching.strategies.structure_matching import LetterLCSStrategy, WordLCSStrategy, JaccardStrategy
 from isd_str_sdk.str_matching.strategies.fuzzy_matching import FuzzyRatioStrategy, LevenshteinStrategy, JaroWinklerStrategy
 from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
-from isd_str_sdk.str_matching.strategies.pris_integration import PRISTreeWalkingStrategy
+#     from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
+# except Exception:
+#     EmbeddingSimilarityStrategy = None
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
 from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone
@@ -42,7 +44,7 @@ STRATEGY_TABLE = {
     "Embedding": EmbeddingSimilarityStrategy,
 
     # special matching method
-    "PRIS_Tree": PRISTreeWalkingStrategy,
+    # "PRIS_Tree": PRISTreeWalkingStrategy,
     
     # testable api
     "_on_dev_strategy_": OnDevStrategy,
@@ -56,6 +58,9 @@ STRATEGY_TABLE = {
     # undone strategy
     # "AbbrevExactMatchStrategy": AbbrevExactMatchStrategy
 }
+
+# Remove any strategies that couldn't be imported (optional deps like sentence-transformers)
+STRATEGY_TABLE = {k: v for k, v in STRATEGY_TABLE.items() if v is not None}
 
 
 from typing import Union, Type
