@@ -164,6 +164,14 @@ pip install sentence-transformers
 
 ---
 
+## 依賴說明（isd-py-framework-sdk）
+
+本專案依賴 `isd-py-framework-sdk`（v0.4.5）。若你的環境無法自動取得該套件，可從下列位置下載 wheel：
+
+https://github.com/ChouYangEn0401/ISDPythonFrameworkSDK/releases/download/v0.4.5/isd_py_framework_sdk-0.4.5-py3-none-any.whl
+
+通常情況下，使用 `pip install .` 或安裝本專案的 wheel 時，安裝流程會自動安裝相依套件（`pyproject.toml` / `requirements.txt` 已包含相依的公開 URL），因此一般使用者不需額外處理。
+
 ## 開發者指引
 
 新增清理函式：繼承 `StrProcessorBase`（無參數）或 `StrProcessorWithParamBase`（有參數），實作 `_handle()`，於 `str_cleaning/__init__.py` 的 `NOPARS_STRATEGY_TABLE` / `STRATEGY_TABLE` 登錄。
