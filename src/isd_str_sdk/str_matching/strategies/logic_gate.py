@@ -1,5 +1,5 @@
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
-from legacy.EntireCompareTree.contexts import ChildrenValueComparisonContext
+from isd_str_sdk.core.contexts import ChildrenValueComparisonContext
 
 
 class AndStrategy(Strategy[ChildrenValueComparisonContext]):

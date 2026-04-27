@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from isd_py_framework_sdk.helpers.decorators.lifecycle import deprecated
 
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 
 
 # --------------------------------------------------------- #

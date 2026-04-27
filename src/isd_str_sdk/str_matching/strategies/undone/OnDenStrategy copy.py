@@ -1,6 +1,6 @@
 from isd_str_sdk.base.AbstractStrategy import Strategy
 from isd_str_sdk.utils.exceptions import MissingParameters
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContextWithStrategyPars
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContextWithStrategyPars
 
 class OnDevStrategy(Strategy[TwoSeriesComparisonContextWithStrategyPars]):
     def __init__(self, df1: str, df2: str, standard: float, strategy_parameters, **kwargs):

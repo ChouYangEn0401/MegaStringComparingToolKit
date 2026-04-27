@@ -1,7 +1,7 @@
 from typing import Literal
 import pandas as pd
 
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContextWithStrategyPars
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContextWithStrategyPars
 
 
 GREEN = "\033[92m"

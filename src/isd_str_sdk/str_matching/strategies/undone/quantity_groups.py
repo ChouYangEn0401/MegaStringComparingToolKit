@@ -3,7 +3,7 @@ from rapidfuzz import fuzz # 替換 fuzzywuzzy 為 rapidfuzz，以獲得顯著�
 from typing import Any, Dict
 from isd_str_sdk.utils.exceptions import MissingParameters
 from isd_str_sdk.base.AbstractStrategy import Strategy, AdvancedStrategy, StrategyResult
-from legacy.EntireCompareTree.contexts import (
+from isd_str_sdk.core.contexts import (
     TwoSeriesComparisonContext,
     TwoSeriesComparisonContextWithStrategyPars,
 )

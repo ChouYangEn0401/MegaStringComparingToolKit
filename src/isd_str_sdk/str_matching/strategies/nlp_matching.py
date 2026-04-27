@@ -1,9 +1,7 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
-
-
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
     
 

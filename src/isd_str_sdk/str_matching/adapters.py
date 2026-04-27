@@ -10,7 +10,7 @@ from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarity
 from isd_str_sdk.str_matching.strategies.pris_integration import PRISTreeWalkingStrategy
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
-# from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # broken: depends on isd_str_sdk.matching_tools
+from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone
 
 
 # 將字串映射到對應的策略類別
@@ -58,36 +58,39 @@ STRATEGY_TABLE = {
 }
 
 
+from typing import Union, Type
+
+
 # ### REFACTOR: mvp simple one, we may need a much more stable and clean ###
 class MatchingStrategyAdapter:
-    def __init__(self, strategy_name: str, standard: float):
-        self.strategy = STRATEGY_TABLE[strategy_name]("str1", "str2", standard)
+    """
+    字串比對策略的統一入口（Level 2 API）。
 
-    def run(
-            self,
-            ## Public Easy API
-            str1: str, str2: str,
-            ## Hidden-able Advanced API Settings
-            split_segment: str = " ； ", strategy_mode: str = "amount_mode", extra_debug_print: bool = False,
-    ):
+    strategy 可傳字串 key 或策略類別本身：
+        MatchingStrategyAdapter("FUZZY", standard=0.8)
+        MatchingStrategyAdapter(FuzzyRatioStrategy, standard=0.8)
+
+    special_params 用於需要額外建構參數的策略（例如 TwoSideInStringStrategy 需要
+    strategy_parameters={"strategy_mode": "a_in_b"}）。
+    """
+
+    def __init__(self, strategy: Union[str, Type], standard: float, **special_params):
+        if isinstance(strategy, str):
+            strategy_cls = STRATEGY_TABLE[strategy]
+        else:
+            strategy_cls = strategy
+        self.strategy = strategy_cls("str1", "str2", standard, **special_params)
+
+    def run(self, str1: str, str2: str):
         assert type(str1) == str, "`str1` Is Not String Type !!"
         assert type(str2) == str, "`str2` Is Not String Type !!"
 
         import pandas as pd
-
-        # ctx = TwoSeriesComparisonContextWithStrategyPars(
         ctx = TwoSeriesComparisonContext(
             row1=pd.Series({"str1": str1}),
             row2=pd.Series({"str2": str2}),
-            # stra_pars={
-            #     "split_segment": split_segment,
-            #     "strategy_mode": strategy_mode,
-            #     "extra_debug_print": extra_debug_print,
-            # },
         )
-
-        result = self.strategy.evaluate(ctx)
-        return result
+        return self.strategy.evaluate(ctx)
 
 
 

@@ -1,7 +1,7 @@
 from typing import Any
 
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 
 
 class ExactMatchStrategy(Strategy[TwoSeriesComparisonContext]):

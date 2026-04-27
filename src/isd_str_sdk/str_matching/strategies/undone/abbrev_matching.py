@@ -3,9 +3,8 @@ from typing import List, Any, Type
 import re
 
 from isd_str_sdk.base import StrProcessorsChain
-from isd_str_sdk.matching_tools.strategies.hybrid_matching import PreprocessedExactMatchStrategy
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
-
+from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
 from isd_str_sdk.base.IStrProcessor import StrProcessorBase
 from isd_str_sdk.str_cleaning import (

@@ -1,5 +1,4 @@
-from legacy.EntireCompareTree.contexts import PRISTreeStructureContext
-
+from isd_str_sdk.core.contexts import PRISTreeStructureContext
 from isd_str_sdk.base.AbstractStrategy import Strategy
 
 

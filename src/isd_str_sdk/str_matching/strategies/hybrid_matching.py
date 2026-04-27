@@ -1,7 +1,6 @@
 from typing import List, Any, Type
 
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
-
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 from isd_str_sdk.base.AbstractStrategy import StrategyResult
 from isd_str_sdk.base.IStrProcessor import StrProcessorBase
 from isd_str_sdk.base.StrProcessorsChain import StrProcessorsChain

@@ -2,7 +2,13 @@ import pandas as pd
 from collections import deque
 
 from isd_str_sdk.base.AbstractNode import Node
-from ...src.isd_str_sdk.matching_tools.strategies.stras import *
+from isd_str_sdk.str_matching.strategies import *
+from isd_str_sdk.core.contexts import (
+    TwoSeriesComparisonContext,
+    ChildrenValueComparisonContext
+)
+
+from legacy.EntireCompareTree.contexts import PRISTreeStructureContext
 from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
 
 

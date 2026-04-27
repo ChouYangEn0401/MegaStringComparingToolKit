@@ -64,7 +64,7 @@ class AdvancedStrategy(Strategy[IComparisonContextFamily]):
 ####
 
 from isd_str_sdk.utils.exceptions import MissingParameters
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContextWithStrategyPars
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContextWithStrategyPars
 
 class NewStrategy(Strategy[TwoSeriesComparisonContextWithStrategyPars], ABC):
     def __init__(self, df1: str, df2: str, standard: float, strategy_parameters, **kwargs):

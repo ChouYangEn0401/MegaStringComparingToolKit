@@ -1,8 +1,7 @@
 from rapidfuzz import fuzz # 替換 fuzzywuzzy 為 rapidfuzz，以獲得顯著的效能提升
 from rapidfuzz.distance import JaroWinkler, Levenshtein
 
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext
-
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
 from isd_str_sdk.base.IStrProcessor import StrProcessorBase
 from isd_str_sdk.base.StrProcessorsChain import StrProcessorsChain
