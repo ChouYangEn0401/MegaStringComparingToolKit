@@ -1,5 +1,5 @@
 from isd_str_sdk.str_matching.strategies.undone.quantity_groups import NewJACCARDStrategy
-from legacy.EntireCompareTree.contexts import TwoSeriesComparisonContext, TwoSeriesComparisonContextWithStrategyPars
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext, TwoSeriesComparisonContextWithStrategyPars
 
 from isd_str_sdk.str_matching.strategies.logic_gate import OrStrategy, AndStrategy, NotOrStrategy, NotAndStrategy
 from isd_str_sdk.str_matching.strategies.exact_matching import ExactMatchStrategy
@@ -10,7 +10,7 @@ from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarity
 from isd_str_sdk.str_matching.strategies.pris_integration import PRISTreeWalkingStrategy
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
-from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy
+# from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # broken: depends on isd_str_sdk.matching_tools
 
 
 # 將字串映射到對應的策略類別

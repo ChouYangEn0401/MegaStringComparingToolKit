@@ -32,12 +32,26 @@ STRATEGY_TABLE = {
 }
 
 class CleaningStrategyAdapter:
+    """
+    字串清理策略的統一入口。
+
+    - 無參數策略：CleaningStrategyAdapter("StrFunc_Lowercase").run("HELLO")
+    - 有參數策略：CleaningStrategyAdapter("StrFuncWithPars_RemoveSpecificSymbol").run("h@i", pars=["@"])
+    """
+
     def __init__(self, strategy_name: str):
-        self.strategy = (NOPARS_STRATEGY_TABLE[strategy_name] or NOPARS_STRATEGY_TABLE[strategy_name])
+        if strategy_name in NOPARS_STRATEGY_TABLE:
+            self.strategy = NOPARS_STRATEGY_TABLE[strategy_name]
+            self._has_pars = False
+        elif strategy_name in STRATEGY_TABLE:
+            self.strategy = STRATEGY_TABLE[strategy_name]
+            self._has_pars = True
+        else:
+            raise KeyError(strategy_name)
 
-    def run(self, input_str: str, pars: dict = None):
+    def run(self, input_str: str, pars=None):
         assert type(input_str) == str, "`input_str` Is Not String Type !!"
-
-        result = self.strategy(input_str).get_result()
-        return result
+        if self._has_pars:
+            return self.strategy(input_str).get_result(pars)
+        return self.strategy(input_str).get_result()
 
