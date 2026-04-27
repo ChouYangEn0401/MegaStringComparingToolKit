@@ -1,6 +1,4 @@
 # --- 組合節點 (Composite Node) ---
-from typing import List
-
 from isd_str_sdk.base.AbstractNode import Node
 from isd_str_sdk.base.AbstractStrategy import Strategy
 from isd_str_sdk.base.IComparisonContext import IComparisonContext

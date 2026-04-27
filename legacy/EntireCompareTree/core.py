@@ -6,13 +6,16 @@
         通過將 Context 介面注入到 Strategy 中，反轉控制權。
         現在，Strategy 不再自己去獲取資料，而是由外部（你的 execute 邏輯）將資料以正確的格式送進來。
 """
-from typing import Union
+from typing import Union, List, Dict, Union
+import pandas as pd
 import time
 
+from isd_str_sdk.base.AbstractNode import Node
 from .base.ComparisonEngine import ComparisonEngine
 from .base.GUITreeTraversalApp import GUITreeTraversalApp
 from .nodes import CompositeNode, LeafNode, PRISLeafNode
 from legacy.PRISTree.PRISTreeNodeBase import PRISTreeNode
+from isd_str_sdk.str_matching.adapters import STRATEGY_TABLE
 
 
 usable_methods_in_moduleDF_combo = [
@@ -32,7 +35,7 @@ def build_tree(config_rule: Union[str, Dict, List], parent_params: Dict = None) 
 
     if isinstance(config_rule, list):
         operator = config_rule[0]  ## 特別針對第0筆的LogicOperator做處理
-        node_strategy = strategy_map[operator]()
+        node_strategy = STRATEGY_TABLE[operator]()
         composite_node = CompositeNode(strategy=node_strategy)
 
         for sub_rule in config_rule[1:]:  ## 然後後面物件就建立成樹，其實邏輯頗好
@@ -47,7 +50,7 @@ def build_tree(config_rule: Union[str, Dict, List], parent_params: Dict = None) 
 
         if "algo" in current_params:
             algo = current_params["algo"]
-            strategy_class = strategy_map[algo]
+            strategy_class = STRATEGY_TABLE[algo]
             leaf = LeafNode(strategy=strategy_class(**current_params))  ## 因為扁平化基本上就可以拿到 df1, df2, standard
             return [leaf]  # type: ignore
 
@@ -55,7 +58,7 @@ def build_tree(config_rule: Union[str, Dict, List], parent_params: Dict = None) 
         for key in config_rule:
             if "PRIS_Tree" == key:
                 nodes.append(
-                    PRISLeafNode(strategy=strategy_map["PRIS_Tree"](*[
+                    PRISLeafNode(strategy=STRATEGY_TABLE["PRIS_Tree"](*[
                         config_rule[key]["df1_col"],
                     ]))
                 )

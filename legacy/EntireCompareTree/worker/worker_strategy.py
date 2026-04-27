@@ -1,10 +1,10 @@
 import pandas as pd
 from typing import List, Tuple, Dict, Any, Type, Union
+from isd_str_sdk.base.AbstractNode import Strategy
+from isd_str_sdk.str_matching.strategies.exact_matching import ExactMatchStrategy
+from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone
 
-from ....src.isd_str_sdk.base.AbstractNode import Strategy
 from ..contexts import TwoSeriesComparisonContext
-from ....src.isd_str_sdk.matching_tools.strategies.stras import ExactMatchStrategy, AbbrevExactMatchStrategy
-
 
 # -------------------------------------
 # Helper: run strategy for one pair
