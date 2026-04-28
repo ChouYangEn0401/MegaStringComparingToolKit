@@ -291,16 +291,36 @@ class MatchingTab(ttk.Frame):
         strategy  = self._strategy_var.get()
         threshold = self._threshold.get()
 
-        # Collect strategy parameters from the dynamic widgets
-        strategy_params: Dict[str, str] = {}
+        # Collect strategy parameters from the dynamic widgets and cast types
+        meta: Dict[str, Any] = get_strategy_param_meta(strategy)
+        strategy_params: Dict[str, Any] = {}
         for key, (var, level) in self._param_widgets.items():
-            val = var.get().strip()
-            if level == "necessary" and not val:
+            raw = var.get()
+            raw_str = str(raw).strip() if raw is not None else ""
+            if level == "necessary" and not raw_str:
                 messagebox.showwarning("Missing parameter",
                                        f"Required parameter '{key}' cannot be empty.")
                 return
-            if val:
-                strategy_params[key] = val
+            if not raw_str:
+                continue
+
+            spec = meta.get(key, {})
+            typ = spec.get("type", "str")
+            try:
+                if typ == "int":
+                    val = int(raw_str)
+                elif typ == "float":
+                    val = float(raw_str)
+                elif typ == "bool":
+                    lower = raw_str.lower()
+                    val = lower in ("1", "true", "t", "yes", "y")
+                else:
+                    val = raw_str
+            except Exception:
+                messagebox.showwarning("Parameter type",
+                                       f"Cannot parse parameter '{key}' as {typ}.")
+                return
+            strategy_params[key] = val
 
         self._match_status.configure(text="Running…", fg=C["warning"])
         self.update_idletasks()

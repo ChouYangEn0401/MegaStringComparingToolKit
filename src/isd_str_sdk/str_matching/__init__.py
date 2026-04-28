@@ -37,7 +37,11 @@ def match(
     else:
         strategy_cls = strategy
 
-    strat = strategy_cls("a", "b", standard=0.0, **strategy_params)
+    ## Claude Sonnet 4.5 Edit
+    # Pass the caller-provided `threshold` into the strategy as its `standard`
+    # value so that strategy implementations that rely on an internal
+    # standard/threshold see the same value as the caller's filter.
+    strat = strategy_cls("a", "b", standard=threshold, **strategy_params)
 
     results = []
     for s1 in list1:

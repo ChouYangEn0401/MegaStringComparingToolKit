@@ -99,6 +99,7 @@ STRATEGY_PARAM_META: Dict[str, Dict[str, Any]] = {
             "mode": "input",
             "level": "necessary",
             "default": " ; ",
+            "type": "str",
             "label": "Split segment",
         },
         "strategy_mode": {
@@ -106,6 +107,7 @@ STRATEGY_PARAM_META: Dict[str, Dict[str, Any]] = {
             "level": "necessary",
             "options": ["score_mode", "amount_mode"],
             "default": "score_mode",
+            "type": "str",
             "label": "Strategy mode",
         },
         "scoring_method": {
@@ -113,13 +115,15 @@ STRATEGY_PARAM_META: Dict[str, Dict[str, Any]] = {
             "level": "optional",
             "options": ["union_base", "set1_base", "set2_base"],
             "default": "union_base",
+            "type": "str",
             "label": "Scoring method",
         },
         "extra_debug_print": {
             "mode": "select",
             "level": "optional",
             "options": ["False", "True"],
-            "default": "False",
+            "default": False,
+            "type": "bool",
             "label": "Debug print",
         },
     },

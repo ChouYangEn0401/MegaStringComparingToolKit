@@ -91,14 +91,19 @@ class NewJACCARDStrategy(AdvancedStrategy[TwoSeriesComparisonContextWithStrategy
     def __init__(self, df1: str, df2: str, standard: float, strategy_parameters, **kwargs):
         self.df1_col = df1
         self.df2_col = df2
-        self.standard = standard
+        # coerce standard to numeric when possible (strategies may expect float/int)
+        try:
+            self.standard = float(standard)
+        except Exception:
+            self.standard = standard
+
         try:
             self.split_segment = strategy_parameters['split_segment']
             self.strategy_mode = strategy_parameters['strategy_mode']
             self.scoring_method = strategy_parameters.get('scoring_method', 'union_base')
             self.extra_debug_print = strategy_parameters.get('extra_debug_print', False)
-        except:
-            ## will just broken if not provided with
+        except Exception:
+            # clearly indicate which params are required
             raise MissingParameters(['split_segment', 'strategy_mode'])
 
     def get_advanced_settings(self) -> Dict[str, Dict[str, Any]]:
@@ -123,7 +128,7 @@ class NewJACCARDStrategy(AdvancedStrategy[TwoSeriesComparisonContextWithStrategy
         set2 = set(val2)
 
         set1_len = len(set1)
-        set2_len = len(set1)
+        set2_len = len(set2)
         self.intersection = set1.intersection(set2)
         intersection_len = len(self.intersection)
         union_len = len(set1.union(set2))
@@ -131,18 +136,31 @@ class NewJACCARDStrategy(AdvancedStrategy[TwoSeriesComparisonContextWithStrategy
         if self.extra_debug_print:
             print(self.intersection)
 
+        # amount_mode: require a minimum number of matching tokens
         if self.strategy_mode == 'amount_mode':
-            return intersection_len >= self.standard
+            try:
+                min_count = int(self.standard)
+            except Exception:
+                min_count = int(float(self.standard)) if self.standard else 0
+            success = intersection_len >= min_count
+            return StrategyResult(success=success, score=float(intersection_len))
+
+        # score_mode: compute a similarity ratio according to scoring_method
         elif self.strategy_mode == 'score_mode':
-            if self.strategy_mode == 'union_base':
+            if self.scoring_method == 'union_base':
                 similarity = intersection_len / union_len if union_len > 0 else 0.0
-            elif self.strategy_mode == 'set1_base':
+            elif self.scoring_method == 'set1_base':
                 similarity = intersection_len / set1_len if set1_len > 0 else 0.0
-            elif self.strategy_mode == 'set2_base':
+            elif self.scoring_method == 'set2_base':
                 similarity = intersection_len / set2_len if set2_len > 0 else 0.0
             else:
                 raise NotImplementedError
-            return StrategyResult(success=similarity >= self.standard, score=similarity)
-        raise NotImplementedError
+            try:
+                thresh = float(self.standard)
+            except Exception:
+                thresh = 0.0
+            return StrategyResult(success=similarity >= thresh, score=similarity)
+
+        # unknown mode
         return StrategyResult(success=False, score=-1.0)
 
