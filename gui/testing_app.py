@@ -40,9 +40,10 @@ from gui._shared import (
     NOPARS_STRATEGY_TABLE, CLEANING_PARS_TABLE, MATCHING_TABLE,
     apply_style,
 )
-from gui._tab_cleaning import CleaningTab
-from gui._tab_matching import MatchingTab
-from gui._tab_tdd      import TDDTab
+from gui._tab_cleaning      import CleaningTab
+from gui._tab_matching      import MatchingTab
+from gui._tab_tdd           import TDDTab
+from gui._tab_result_helper import ResultHelperTab
 
 
 class App(tk.Tk):
@@ -82,8 +83,11 @@ class App(tk.Tk):
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True)
         nb.add(CleaningTab(nb), text="  🧹  Cleaning Lab  ")
-        nb.add(MatchingTab(nb), text="  🔍  Matching Lab  ")
-        nb.add(TDDTab(nb),      text="  🧪  TDD Workbench  ")
+        matching_tab = MatchingTab(nb)
+        nb.add(matching_tab, text="  🔍  Matching Lab  ")
+        nb.add(TDDTab(nb),   text="  🧪  TDD Workbench  ")
+        nb.add(ResultHelperTab(nb, get_match_results=matching_tab.get_results),
+               text="  🔗  Result Helper  ")
 
 
 if __name__ == "__main__":

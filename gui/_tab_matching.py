@@ -14,7 +14,7 @@ from gui._shared import (
     C, F_BODY, F_BOLD, F_H2, F_SMALL,
     SDK_OK, SDK_ERROR, PANDAS_OK,
     MATCHING_TABLE, sdk_match, get_strategy_param_meta,
-    ColumnPickerDialog,
+    ColumnPickerDialog, SheetPickerDialog,
     make_code_editor, make_treeview, hdr_label, section_sep,
 )
 
@@ -22,33 +22,6 @@ try:
     import pandas as pd
 except ImportError:
     pd = None  # type: ignore
-
-
-class SheetPickerDialog(tk.Toplevel):
-    """Pick one sheet name from a list."""
-
-    def __init__(self, parent: tk.Widget, sheets: List[str]) -> None:
-        super().__init__(parent)
-        self.title("Select Sheet")
-        self.configure(bg=C["bg"])
-        self.resizable(False, False)
-        self.result: Optional[str] = None
-        self._var = tk.StringVar(value=sheets[0] if sheets else "")
-
-        tk.Label(self, text="Select sheet to import:", font=F_BOLD,
-                 bg=C["bg"], fg=C["text"]).pack(padx=16, pady=(12, 4))
-        ttk.Combobox(self, values=sheets, textvariable=self._var,
-                     state="readonly", font=F_BODY, width=24).pack(padx=16, pady=4)
-        row = tk.Frame(self, bg=C["bg"]) 
-        row.pack(pady=(4, 12))
-        ttk.Button(row, text="OK",     style="Accent.TButton", command=self._ok).pack(side="left", padx=4)
-        ttk.Button(row, text="Cancel", command=self.destroy).pack(side="left", padx=4)
-        self.grab_set()
-        self.wait_window()
-
-    def _ok(self) -> None:
-        self.result = self._var.get()
-        self.destroy()
 
 
 class MatchingTab(ttk.Frame):
@@ -355,15 +328,25 @@ class MatchingTab(ttk.Frame):
         self._match_status.configure(
             text=f"Done ✓  {len(results)} pair(s)", fg=C["success"])
 
+    def get_results(self) -> "List[Tuple[str, str, float]]":
+        """Return current match results; called by ResultHelperTab via callback."""
+        return list(self._result_data)
+
     def _export(self) -> None:
         if not self._result_data:
             messagebox.showinfo("Nothing", "Run a match first."); return
-        path = filedialog.asksaveasfilename(defaultextension=".csv",
-                                            filetypes=[("CSV", "*.csv")])
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV", "*.csv"), ("Excel", "*.xlsx"), ("All", "*.*")],
+        )
         if not path:
             return
-        with open(path, "w", newline="", encoding="utf-8-sig") as f:
-            w = _csv.writer(f)
-            w.writerow(["query", "best_match", "score"])
-            w.writerows((q, r, f"{s:.4f}") for q, r, s in self._result_data)
+        import os as _os
+        import pandas as _pd
+        df_out = _pd.DataFrame(self._result_data, columns=["query", "best_match", "score"])
+        ext = _os.path.splitext(path)[1].lower()
+        if ext in (".xlsx", ".xls"):
+            df_out.to_excel(path, index=False)
+        else:
+            df_out.to_csv(path, index=False, encoding="utf-8-sig")
         messagebox.showinfo("Exported", f"Saved to:\n{path}")

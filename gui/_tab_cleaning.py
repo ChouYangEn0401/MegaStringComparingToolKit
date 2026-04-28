@@ -405,10 +405,17 @@ class CleaningTab(ttk.Frame):
         if not self._result_data:
             messagebox.showinfo("Nothing to export", "Run the chain on a file first.")
             return
-        path = filedialog.asksaveasfilename(defaultextension=".csv",
-                                            filetypes=[("CSV", "*.csv")])
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV", "*.csv"), ("Excel", "*.xlsx"), ("All", "*.*")],
+        )
         if not path:
             return
+        import os as _os
         df_out = pd.DataFrame(self._result_data, columns=["original", "result"])
-        df_out.to_csv(path, index=False, encoding="utf-8-sig")
+        ext = _os.path.splitext(path)[1].lower()
+        if ext in (".xlsx", ".xls"):
+            df_out.to_excel(path, index=False)
+        else:
+            df_out.to_csv(path, index=False, encoding="utf-8-sig")
         messagebox.showinfo("Exported", f"Saved to:\n{path}")

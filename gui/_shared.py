@@ -234,7 +234,8 @@ def section_sep(parent: tk.Widget, padx: int = 8) -> None:
 class ColumnPickerDialog(tk.Toplevel):
     """Pick one column name from a list."""
 
-    def __init__(self, parent: tk.Widget, columns: List[str]) -> None:
+    def __init__(self, parent: tk.Widget, columns: List[str],
+                 prompt: str = "Select column to import:") -> None:
         super().__init__(parent)
         self.title("Select Column")
         self.configure(bg=C["bg"])
@@ -242,7 +243,7 @@ class ColumnPickerDialog(tk.Toplevel):
         self.result: Optional[str] = None
         self._var = tk.StringVar(value=columns[0] if columns else "")
 
-        tk.Label(self, text="Select column to import:", font=F_BOLD,
+        tk.Label(self, text=prompt, font=F_BOLD,
                  bg=C["bg"], fg=C["text"]).pack(padx=16, pady=(12, 4))
         ttk.Combobox(self, values=columns, textvariable=self._var,
                      state="readonly", font=F_BODY, width=24).pack(padx=16, pady=4)
@@ -255,6 +256,94 @@ class ColumnPickerDialog(tk.Toplevel):
 
     def _ok(self) -> None:
         self.result = self._var.get()
+        self.destroy()
+
+
+class SheetPickerDialog(tk.Toplevel):
+    """Pick one sheet name from an Excel workbook."""
+
+    def __init__(self, parent: tk.Widget, sheets: List[str]) -> None:
+        super().__init__(parent)
+        self.title("Select Sheet")
+        self.configure(bg=C["bg"])
+        self.resizable(False, False)
+        self.result: Optional[str] = None
+        self._var = tk.StringVar(value=sheets[0] if sheets else "")
+
+        tk.Label(self, text="Select sheet to import:", font=F_BOLD,
+                 bg=C["bg"], fg=C["text"]).pack(padx=16, pady=(12, 4))
+        ttk.Combobox(self, values=sheets, textvariable=self._var,
+                     state="readonly", font=F_BODY, width=24).pack(padx=16, pady=4)
+        row = tk.Frame(self, bg=C["bg"])
+        row.pack(pady=(4, 12))
+        ttk.Button(row, text="OK",     style="Accent.TButton", command=self._ok).pack(side="left", padx=4)
+        ttk.Button(row, text="Cancel", command=self.destroy).pack(side="left", padx=4)
+        self.grab_set()
+        self.wait_window()
+
+    def _ok(self) -> None:
+        self.result = self._var.get()
+        self.destroy()
+
+
+class MultiColumnPickerDialog(tk.Toplevel):
+    """Pick multiple column names from a list via checkboxes."""
+
+    def __init__(self, parent: tk.Widget, columns: List[str],
+                 title: str = "Select Columns",
+                 prompt: str = "Check the columns to include:",
+                 preselect: Optional[List[str]] = None) -> None:
+        super().__init__(parent)
+        self.title(title)
+        self.configure(bg=C["bg"])
+        self.resizable(True, True)
+        self.result: Optional[List[str]] = None
+        self._vars: Dict[str, tk.BooleanVar] = {}
+
+        tk.Label(self, text=prompt, font=F_BOLD,
+                 bg=C["bg"], fg=C["text"]).pack(padx=16, pady=(12, 4))
+
+        # Scrollable checkbox area
+        outer = tk.Frame(self, bg=C["border"], bd=1)
+        outer.pack(padx=16, pady=4, fill="both", expand=True)
+        outer.rowconfigure(0, weight=1)
+        outer.columnconfigure(0, weight=1)
+        canvas = tk.Canvas(outer, bg=C["surface"], highlightthickness=0, width=240)
+        vsb = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        inner = tk.Frame(canvas, bg=C["surface"])
+        canvas.create_window((0, 0), window=inner, anchor="nw")
+        inner.bind("<Configure>", lambda _: canvas.configure(
+            scrollregion=canvas.bbox("all"),
+            height=min(300, len(columns) * 28 + 8),
+        ))
+
+        ps = set(preselect or [])
+        for col in columns:
+            v = tk.BooleanVar(value=(col in ps))
+            self._vars[col] = v
+            tk.Checkbutton(inner, text=col, variable=v, font=F_BODY,
+                           bg=C["surface"], fg=C["text"], anchor="w",
+                           activebackground=C["accent_lt"],
+                           selectcolor=C["accent_lt"]).pack(fill="x", padx=8, pady=1)
+
+        # Select / deselect all
+        ctrl = tk.Frame(self, bg=C["bg"])
+        ctrl.pack(padx=16, pady=(4, 0), fill="x")
+        ttk.Button(ctrl, text="All",  command=lambda: [v.set(True)  for v in self._vars.values()]).pack(side="left", padx=2)
+        ttk.Button(ctrl, text="None", command=lambda: [v.set(False) for v in self._vars.values()]).pack(side="left", padx=2)
+
+        row = tk.Frame(self, bg=C["bg"])
+        row.pack(pady=(6, 12))
+        ttk.Button(row, text="OK",     style="Accent.TButton", command=self._ok).pack(side="left", padx=4)
+        ttk.Button(row, text="Cancel", command=self.destroy).pack(side="left", padx=4)
+        self.grab_set()
+        self.wait_window()
+
+    def _ok(self) -> None:
+        self.result = [col for col, v in self._vars.items() if v.get()]
         self.destroy()
 
 
