@@ -5,7 +5,7 @@ import csv as _csv
 import os
 import threading
 import traceback
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -13,7 +13,7 @@ from tkinter import ttk, filedialog, messagebox
 from gui._shared import (
     C, F_BODY, F_BOLD, F_H2, F_SMALL,
     SDK_OK, SDK_ERROR, PANDAS_OK,
-    MATCHING_TABLE, sdk_match,
+    MATCHING_TABLE, sdk_match, get_strategy_param_meta,
     ColumnPickerDialog,
     make_code_editor, make_treeview, hdr_label, section_sep,
 )
@@ -58,6 +58,7 @@ class MatchingTab(ttk.Frame):
         self._threshold    = tk.DoubleVar(value=0.5)
         self._strategy_var = tk.StringVar(value="FUZZY")
         self._result_data: List[Tuple[str, str, float]] = []
+        self._param_widgets: Dict[str, Tuple[tk.Variable, str]] = {}  # key -> (var, level)
         self._build()
 
     def _build(self) -> None:
@@ -106,20 +107,48 @@ class MatchingTab(ttk.Frame):
         p.columnconfigure(0, weight=1)
         hdr_label(p, "③ Config")
 
-        inner = tk.Frame(p, bg=C["bg"])
-        inner.pack(fill="both", expand=True, padx=8, pady=8)
-        inner.columnconfigure(0, weight=1)
+        # Scrollable inner area so param widgets never overflow
+        canvas = tk.Canvas(p, bg=C["bg"], highlightthickness=0)
+        vsb = ttk.Scrollbar(p, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        vsb.pack(side="right", fill="y")
 
+        inner = tk.Frame(canvas, bg=C["bg"])
+        inner.columnconfigure(0, weight=1)
+        _win = canvas.create_window((0, 0), window=inner, anchor="nw")
+
+        def _on_frame_configure(e: Any) -> None:
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        def _on_canvas_configure(e: Any) -> None:
+            canvas.itemconfig(_win, width=e.width)
+        inner.bind("<Configure>", _on_frame_configure)
+        canvas.bind("<Configure>", _on_canvas_configure)
+
+        # ── Strategy selector ─────────────────────────────────────────────
         tk.Label(inner, text="Strategy:", font=F_BOLD,
-                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x", pady=(0, 2))
+                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x", padx=8, pady=(8, 2))
         strats = sorted(MATCHING_TABLE.keys()) if SDK_OK else []
         self._strat_combo = ttk.Combobox(inner, values=strats,
                                           textvariable=self._strategy_var,
                                           state="readonly", font=F_BODY)
-        self._strat_combo.pack(fill="x", pady=(0, 8))
+        self._strat_combo.pack(fill="x", padx=8, pady=(0, 6))
+        self._strat_combo.bind("<<ComboboxSelected>>", lambda _: self._rebuild_param_widgets())
 
+        # ── Dynamic strategy parameters ────────────────────────────────────
+        tk.Label(inner, text="Parameters:", font=F_BOLD,
+                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x", padx=8, pady=(2, 2))
+        self._params_outer = tk.Frame(inner, bg=C["surface2"],
+                                      highlightthickness=1,
+                                      highlightbackground=C["border"])
+        self._params_outer.pack(fill="x", padx=8, pady=(0, 8))
+        self._params_outer.columnconfigure(1, weight=1)
+        self._rebuild_param_widgets()
+
+        # ── Threshold ─────────────────────────────────────────────────────
+        section_sep(inner, 8)
         tk.Label(inner, text="Threshold:", font=F_BOLD,
-                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x")
+                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x", padx=8)
         self._thresh_lbl = tk.Label(inner, text="0.50", font=F_H2,
                                     bg=C["bg"], fg=C["accent"])
         self._thresh_lbl.pack()
@@ -127,16 +156,16 @@ class MatchingTab(ttk.Frame):
             inner, from_=0.0, to=1.0, variable=self._threshold, orient="horizontal",
             command=lambda _: self._thresh_lbl.configure(
                 text=f"{self._threshold.get():.2f}"),
-        ).pack(fill="x", pady=(0, 12))
+        ).pack(fill="x", padx=8, pady=(0, 10))
 
-        section_sep(inner, 0)
+        section_sep(inner, 8)
 
         tk.Button(inner, text="  ▶  Run Match", font=F_BOLD,
                   bg=C["success"], fg="#fff", relief="flat", cursor="hand2",
                   activebackground="#059669",
-                  command=self._run_match).pack(fill="x", pady=(0, 4))
+                  command=self._run_match).pack(fill="x", padx=8, pady=(0, 4))
         ttk.Button(inner, text="Export Results",
-                   command=self._export).pack(fill="x")
+                   command=self._export).pack(fill="x", padx=8)
 
         self._match_status = tk.Label(inner, text="", font=F_SMALL,
                                       bg=C["bg"], fg=C["text_muted"], wraplength=160)
@@ -164,6 +193,52 @@ class MatchingTab(ttk.Frame):
         self._result_tv.tag_configure("high",   background=C["success_bg"])
         self._result_tv.tag_configure("medium", background=C["warning_bg"])
         self._result_tv.tag_configure("low",    background=C["danger_bg"])
+
+    # ── Dynamic parameter panel ─────────────────────────────────────────────
+
+    def _rebuild_param_widgets(self) -> None:
+        """Destroy and rebuild the parameter widgets for the currently selected strategy."""
+        for w in self._params_outer.winfo_children():
+            w.destroy()
+        self._param_widgets.clear()
+
+        name = self._strategy_var.get()
+        meta: Dict[str, Any] = get_strategy_param_meta(name)
+
+        if not meta:
+            tk.Label(self._params_outer, text="No parameters needed",
+                     font=F_SMALL, bg=C["surface2"], fg=C["text_muted"],
+                     padx=8, pady=6).grid(row=0, column=0, columnspan=2, sticky="ew")
+            return
+
+        for i, (key, spec) in enumerate(meta.items()):
+            level   = spec.get("level", "optional")
+            mode    = spec.get("mode",  "input")
+            options = spec.get("options", [])
+            default = spec.get("default", options[0] if options else "")
+            label   = spec.get("label", key)
+
+            is_req   = level == "necessary"
+            lbl_fg   = C["text"] if is_req else C["text_muted"]
+            asterisk = "*" if is_req else " "
+
+            tk.Label(self._params_outer,
+                     text=f"{asterisk} {label}:",
+                     font=F_SMALL, bg=C["surface2"], fg=lbl_fg,
+                     anchor="e", padx=4
+                     ).grid(row=i, column=0, sticky="e", pady=3)
+
+            var = tk.StringVar(value=str(default))
+            if mode == "select":
+                widget: tk.Widget = ttk.Combobox(
+                    self._params_outer, textvariable=var,
+                    values=[str(o) for o in options],
+                    state="readonly", font=F_SMALL, width=13)
+            else:
+                widget = ttk.Entry(self._params_outer, textvariable=var,
+                                   font=F_SMALL, width=13)
+            widget.grid(row=i, column=1, sticky="ew", padx=(0, 6), pady=3)
+            self._param_widgets[key] = (var, level)
 
     # ── File loader ───────────────────────────────────────────────────────────
 
@@ -216,12 +291,27 @@ class MatchingTab(ttk.Frame):
         strategy  = self._strategy_var.get()
         threshold = self._threshold.get()
 
+        # Collect strategy parameters from the dynamic widgets
+        strategy_params: Dict[str, str] = {}
+        for key, (var, level) in self._param_widgets.items():
+            val = var.get().strip()
+            if level == "necessary" and not val:
+                messagebox.showwarning("Missing parameter",
+                                       f"Required parameter '{key}' cannot be empty.")
+                return
+            if val:
+                strategy_params[key] = val
+
         self._match_status.configure(text="Running…", fg=C["warning"])
         self.update_idletasks()
 
+        # Build extra kwargs: non-empty params go as strategy_parameters={...}
+        extra_kwargs = {"strategy_parameters": strategy_params} if strategy_params else {}
+
         def _worker() -> None:
             try:
-                results = sdk_match(list1, list2, strategy=strategy, threshold=threshold)
+                results = sdk_match(list1, list2, strategy=strategy,
+                                    threshold=threshold, **extra_kwargs)
                 self.after(0, lambda: self._show_results(results))
             except Exception:
                 err = traceback.format_exc()

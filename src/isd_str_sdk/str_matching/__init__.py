@@ -58,5 +58,6 @@ def match(
     return results
 
 
-__all__ = ["match", "MatchingStrategyAdapter", "STRATEGY_TABLE"]
+__all__ = ["match", "MatchingStrategyAdapter", "STRATEGY_TABLE",
+           "STRATEGY_PARAM_META", "get_strategy_param_meta"]
 

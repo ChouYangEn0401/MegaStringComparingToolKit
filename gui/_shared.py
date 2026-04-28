@@ -29,6 +29,8 @@ try:
     from isd_str_sdk.str_matching.adapters import (
         MatchingStrategyAdapter,
         STRATEGY_TABLE as MATCHING_TABLE,
+        STRATEGY_PARAM_META as MATCHING_PARAM_META,
+        get_strategy_param_meta,
     )
     from isd_str_sdk.TDD.run_strategy_tests import run_strategy_test  # noqa: F401
     from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
@@ -40,7 +42,11 @@ except ImportError as _e:
     NOPARS_STRATEGY_TABLE = {}
     CLEANING_PARS_TABLE = {}
     MATCHING_TABLE = {}
+    MATCHING_PARAM_META = {}
     PARAM_META = {}
+
+    def get_strategy_param_meta(name: str) -> dict:  # type: ignore[misc]
+        return {}
 
 try:
     import pandas as pd
