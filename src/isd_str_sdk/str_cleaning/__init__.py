@@ -23,20 +23,74 @@ NOPARS_STRATEGY_TABLE = {
     "StrFunc_NormalizeParentheses": StrFunc_NormalizeParentheses,
     "StrFunc_NormalizeWhitespace": StrFunc_NormalizeWhitespace,
     "StrFunc_KeepEnglishParenthesesAndSpaces": StrFunc_KeepEnglishParenthesesAndSpaces,
-    "StrFunc_ExcelACTable_Base": StrFunc_ExcelACTable_Base,
     "StrFunc_RemoveUpperCaseStopwords": StrFunc_RemoveUpperCaseStopwords,
+    # ── Excel AC Table (pre-contextualised) ──────────────────────────────────
+    "StrFunc_ExcelACTable_UnionLetter_STOPWORD":  StrFunc_ExcelACTable_UnionLetter_STOPWORD,
+    "StrFunc_ExcelACTable_UnionLetter_SYMBOL":    StrFunc_ExcelACTable_UnionLetter_SYMBOL,
+    "StrFunc_ExcelACTable_UnionLetter_ENCODING":  StrFunc_ExcelACTable_UnionLetter_ENCODING,
+    "StrFunc_ExcelACTable_UnionLetter_FOREIGN":   StrFunc_ExcelACTable_UnionLetter_FOREIGN,
+    "StrFunc_ExcelACTable_UnionLetter_COMPANY":   StrFunc_ExcelACTable_UnionLetter_COMPANY,
+    "StrFunc_ExcelACTable_UnionLetter_SCHOOL":    StrFunc_ExcelACTable_UnionLetter_SCHOOL,
+    "StrFunc_ExcelACTable_UnionLetter_ORG":       StrFunc_ExcelACTable_UnionLetter_ORG,
+    "StrFunc_ExcelACTable_UnionLetter_HOSPITAL":  StrFunc_ExcelACTable_UnionLetter_HOSPITAL,
+    "StrFunc_ExcelACTable_UnionLetter_ALLOrg":    StrFunc_ExcelACTable_UnionLetter_ALLOrg,
 }
+
 STRATEGY_TABLE = {
-    "StrFuncWithPars_RemoveSpecificSymbol": StrFuncWithPars_RemoveSpecificSymbol,
-    # "StrFunc_UnionByExcelACTable": StrFunc_UnionByExcelACTable,
+    # ── Single-choice param ───────────────────────────────────────────────────
+    "StrFuncWithPars_CaseConvert":             StrFuncWithPars_CaseConvert,
+    "StrFunc_Capitalize":                      StrFunc_Capitalize,
+    "StrFunc_SortWordsWithDictionaryOrder":    StrFunc_SortWordsWithDictionaryOrder,
+    # ── List-of-strings param ─────────────────────────────────────────────────
+    "StrFuncWithPars_RemoveSpecificSymbol":    StrFuncWithPars_RemoveSpecificSymbol,
+    "StrFunc_MultipleKeepLogic":              StrFunc_MultipleKeepLogic,
+    "StrFunc_ReplaceInputToNothing":          StrFunc_ReplaceInputToNothing,
+    # ── List-of-tuple param ────────────────────────────────────────────────────
+    "StrFunc_ReplaceInputToSomething":        StrFunc_ReplaceInputToSomething,
 }
+
+# Metadata for the GUI param-dialog builder.
+# Format: name -> ("kind", options_or_hint)
+#   kind "choice"     — single string; options = list of valid values
+#   kind "multi_list" — List[str];     options = checkbox labels
+#   kind "list_str"   — List[str];     options = hint string
+#   kind "list_pairs" — List[Tuple];   options = hint string
+PARAM_META = {
+    "StrFuncWithPars_CaseConvert": (
+        "choice", ["upper", "lower"],
+    ),
+    "StrFunc_Capitalize": (
+        "choice", ["sentence", "words"],
+    ),
+    "StrFunc_SortWordsWithDictionaryOrder": (
+        "choice", ["ascend", "descend"],
+    ),
+    "StrFuncWithPars_RemoveSpecificSymbol": (
+        "list_str", "Symbols to remove — one per field, e.g.  @  #  !",
+    ),
+    "StrFunc_MultipleKeepLogic": (
+        "multi_list", ["英文", "數字", "符號", "字間空白", "句首末空白"],
+    ),
+    "StrFunc_ReplaceInputToNothing": (
+        "list_str", "Strings to delete — comma-separated, e.g.  Ltd.,  Inc.",
+    ),
+    "StrFunc_ReplaceInputToSomething": (
+        "list_pairs", "Replacement pairs — format  old=new, old2=new2",
+    ),
+}
+
 
 class CleaningStrategyAdapter:
     """
     字串清理策略的統一入口。
 
     - 無參數策略：CleaningStrategyAdapter("StrFunc_Lowercase").run("HELLO")
+    - 有參數策略：CleaningStrategyAdapter("StrFuncWithPars_CaseConvert").run("HELLO", pars="lower")
     - 有參數策略：CleaningStrategyAdapter("StrFuncWithPars_RemoveSpecificSymbol").run("h@i", pars=["@"])
+    - 有參數策略：CleaningStrategyAdapter("StrFunc_ReplaceInputToSomething").run("hi", pars=[("hi","hello")])
+
+    `pars` should already be the correct Python type for the strategy
+    (str / List[str] / List[Tuple[str,str]]) — see PARAM_META for guidance.
     """
 
     def __init__(self, strategy_name: str):

@@ -79,11 +79,35 @@ CleaningStrategyAdapter("StrFunc_KeepEnglishLetterAndDigits").run("abc 123!@#")
 | `StrFunc_AscendDictionaryOrder` | 字詞按字典序升序排列 | `"banana apple cherry"` → `"apple banana cherry"` |
 | `StrFunc_DescendDictionaryOrder` | 字詞按字典序降序排列 | `"apple banana cherry"` → `"cherry banana apple"` |
 
-### 進階：Excel 對照表替換
+### 進階：Excel 權控對照表替換（pre_contexted 模組）
 
-| 函式名稱 | 說明 |
-|---|---|
-| `StrFunc_ExcelACTable_Base` | 基礎類別（需搭配子類使用），透過外部 Excel 對照表做字詞替換 |
+這組函式讀取專案內附 Excel（`權控分析_資料前處理_統一詞彙用權控表.xlsx`），按「類型遮罩」批次替換字詞。  
+替換模式有兩種：**WORD**（以空白切分後整詞比對）、**LETTER**（逐字元比對）。
+
+| 函式名稱 | 替換模式 | 說明 |
+|---|---|---|
+| `StrFunc_ExcelACTable_UnionLetter_STOPWORD`  | WORD   | 基本權控：停止詞替換 |
+| `StrFunc_ExcelACTable_UnionLetter_SYMBOL`    | LETTER | 基本權控：符號統一（逐字元） |
+| `StrFunc_ExcelACTable_UnionLetter_ENCODING`  | WORD   | 基本權控：編碼詞統一 |
+| `StrFunc_ExcelACTable_UnionLetter_FOREIGN`   | LETTER | 基本權控：外語字母統一（逐字元） |
+| `StrFunc_ExcelACTable_UnionLetter_COMPANY`   | WORD   | 專案權控：公司名詞統一 |
+| `StrFunc_ExcelACTable_UnionLetter_SCHOOL`    | WORD   | 專案權控：學校名詞統一 |
+| `StrFunc_ExcelACTable_UnionLetter_ORG`       | WORD   | 專案權控：機構詞統一 |
+| `StrFunc_ExcelACTable_UnionLetter_HOSPITAL`  | WORD   | 專案權控：醫院詞統一 |
+| `StrFunc_ExcelACTable_UnionLetter_ALLOrg`    | WORD   | 所有組織詞統一（SCHOOL+ORG+HOSPITAL+COMPANY 合集） |
+
+> **Excel 檔位置**：`src/isd_str_sdk/str_cleaning/strategies/pre_contexted/權控分析_資料前處理_統一詞彙用權控表.xlsx`  
+> 欄位要求：`啟用狀態`（1=啟用）、`種類`（類型名稱）、`權控前`（原詞）、`權控後`（替換詞）。  
+> 此模組使用 Singleton 載入，效能佳；首次呼叫後快取結果。
+
+```python
+# 使用 Adapter（推薦）
+CleaningStrategyAdapter("StrFunc_ExcelACTable_UnionLetter_STOPWORD").run("The University OF Taiwan")
+# -> "University Taiwan"  （停止詞被替換為空字串後重新 join）
+
+# 直接呼叫
+StrFunc_ExcelACTable_UnionLetter_ALLOrg("Stanford University").get_result()
+```
 
 ---
 
