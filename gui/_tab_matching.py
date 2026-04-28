@@ -24,6 +24,33 @@ except ImportError:
     pd = None  # type: ignore
 
 
+class SheetPickerDialog(tk.Toplevel):
+    """Pick one sheet name from a list."""
+
+    def __init__(self, parent: tk.Widget, sheets: List[str]) -> None:
+        super().__init__(parent)
+        self.title("Select Sheet")
+        self.configure(bg=C["bg"])
+        self.resizable(False, False)
+        self.result: Optional[str] = None
+        self._var = tk.StringVar(value=sheets[0] if sheets else "")
+
+        tk.Label(self, text="Select sheet to import:", font=F_BOLD,
+                 bg=C["bg"], fg=C["text"]).pack(padx=16, pady=(12, 4))
+        ttk.Combobox(self, values=sheets, textvariable=self._var,
+                     state="readonly", font=F_BODY, width=24).pack(padx=16, pady=4)
+        row = tk.Frame(self, bg=C["bg"]) 
+        row.pack(pady=(4, 12))
+        ttk.Button(row, text="OK",     style="Accent.TButton", command=self._ok).pack(side="left", padx=4)
+        ttk.Button(row, text="Cancel", command=self.destroy).pack(side="left", padx=4)
+        self.grab_set()
+        self.wait_window()
+
+    def _ok(self) -> None:
+        self.result = self._var.get()
+        self.destroy()
+
+
 class MatchingTab(ttk.Frame):
 
     def __init__(self, notebook: ttk.Notebook) -> None:
@@ -149,8 +176,20 @@ class MatchingTab(ttk.Frame):
             return
         try:
             ext = os.path.splitext(path)[1].lower()
-            df = (pd.read_csv(path, dtype=str, keep_default_na=False) if ext == ".csv"
-                  else pd.read_excel(path, dtype=str, keep_default_na=False))
+            if ext == ".csv":
+                df = pd.read_csv(path, dtype=str, keep_default_na=False)
+            else:
+                xl = pd.ExcelFile(path)
+                sheets = xl.sheet_names
+                if not sheets:
+                    messagebox.showerror("Load error", "No sheets found in Excel file."); return
+                if len(sheets) == 1:
+                    df = pd.read_excel(path, sheet_name=sheets[0], dtype=str, keep_default_na=False)
+                else:
+                    sdlg = SheetPickerDialog(self, sheets)
+                    if sdlg.result is None:
+                        return
+                    df = pd.read_excel(path, sheet_name=sdlg.result, dtype=str, keep_default_na=False)
         except Exception as e:
             messagebox.showerror("Load error", str(e)); return
 
