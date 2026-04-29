@@ -6,10 +6,10 @@ from isd_str_sdk.str_matching.strategies.exact_matching import ExactMatchStrateg
 from isd_str_sdk.str_matching.strategies.structure_matching import InStringStrategy, TwoSideInStringStrategy, TwoSideInWith3WordsStringStrategy
 from isd_str_sdk.str_matching.strategies.structure_matching import LetterLCSStrategy, WordLCSStrategy, JaccardStrategy
 from isd_str_sdk.str_matching.strategies.fuzzy_matching import FuzzyRatioStrategy, LevenshteinStrategy, JaroWinklerStrategy
-from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
-#     from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
-# except Exception:
-#     EmbeddingSimilarityStrategy = None
+try:
+    from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
+except ImportError:
+    EmbeddingSimilarityStrategy = None
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
 from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone
@@ -63,7 +63,91 @@ STRATEGY_TABLE = {
 STRATEGY_TABLE = {k: v for k, v in STRATEGY_TABLE.items() if v is not None}
 
 
-from typing import Union, Type
+from typing import Union, Type, Dict, Any
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Strategy parameter metadata
+#  Schema per key: {
+#    "mode"   : "input" | "select",          # free-text vs dropdown
+#    "level"  : "necessary" | "optional",    # required or not
+#    "options": [...],                        # only for "select"
+#    "default": ...,                          # sensible fallback
+#    "label"  : str,                          # human-readable name shown in UI
+#  }
+# ─────────────────────────────────────────────────────────────────────────────
+STRATEGY_PARAM_META: Dict[str, Dict[str, Any]] = {
+    "TwoSideInStringStrategy": {
+        "strategy_mode": {
+            "mode": "select",
+            "level": "necessary",
+            "options": ["any", "a_in_b", "b_in_a"],
+            "default": "any",
+            "label": "Match direction",
+        }
+    },
+    "_on_dev_strategy_": {
+        "keyword": {
+            "mode": "input",
+            "level": "necessary",
+            "default": "",
+            "label": "Keyword",
+        }
+    },
+    "NewJACCARDStrategy": {
+        "split_segment": {
+            "mode": "input",
+            "level": "necessary",
+            "default": " ; ",
+            "type": "str",
+            "label": "Split segment",
+        },
+        "strategy_mode": {
+            "mode": "select",
+            "level": "necessary",
+            "options": ["score_mode", "amount_mode"],
+            "default": "score_mode",
+            "type": "str",
+            "label": "Strategy mode",
+        },
+        "scoring_method": {
+            "mode": "select",
+            "level": "optional",
+            "options": ["union_base", "set1_base", "set2_base"],
+            "default": "union_base",
+            "type": "str",
+            "label": "Scoring method",
+        },
+        "extra_debug_print": {
+            "mode": "select",
+            "level": "optional",
+            "options": ["False", "True"],
+            "default": False,
+            "type": "bool",
+            "label": "Debug print",
+        },
+    },
+}
+
+
+def get_strategy_param_meta(name: str) -> Dict[str, Any]:
+    """Return parameter metadata for a strategy by name.
+
+    Returns an ordered dict: {param_key: spec_dict}.
+    Empty dict means the strategy takes no extra parameters.
+
+    Falls back to ``get_advanced_settings()`` on the class if the static
+    registry has no entry (supports future self-describing strategies).
+    """
+    if name in STRATEGY_PARAM_META:
+        return STRATEGY_PARAM_META[name]
+    cls = STRATEGY_TABLE.get(name)
+    if cls is not None and hasattr(cls, "get_advanced_settings"):
+        try:
+            return cls.__new__(cls).get_advanced_settings()
+        except Exception:
+            return {}
+    return {}
 
 
 # ### REFACTOR: mvp simple one, we may need a much more stable and clean ###
