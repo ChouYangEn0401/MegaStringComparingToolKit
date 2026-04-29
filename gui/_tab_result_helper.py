@@ -202,7 +202,9 @@ class ResultHelperTab(ttk.Frame):
         super().__init__(notebook)
         self._get_match_results = get_match_results
         self._match_df: Optional["pd.DataFrame"] = None   # query / best_match / score
-        self._output_df: Optional["pd.DataFrame"] = None
+        self._output_df: Optional["pd.DataFrame"] = None  # stacked (all scenarios)
+        self._scenario_frames: Dict[str, "pd.DataFrame"] = {}  # key → df per scenario
+        self._split_var = tk.BooleanVar(value=False)
         self._build()
 
     # ── Layout ───────────────────────────────────────────────────────────────
@@ -358,23 +360,32 @@ class ResultHelperTab(ttk.Frame):
                    command=self._export).grid(
                        row=11, column=0, columnspan=3, sticky="ew", padx=4)
 
+        ttk.Checkbutton(
+            inner, text="Separate sheets per scenario (Excel only)",
+            variable=self._split_var,
+        ).grid(row=12, column=0, columnspan=3, sticky="w", padx=6, pady=(4, 0))
+
         self._build_status = tk.Label(inner, text="", font=F_SMALL,
                                        bg=C["bg"], fg=C["text_muted"])
-        self._build_status.grid(row=12, column=0, columnspan=3, pady=4)
+        self._build_status.grid(row=13, column=0, columnspan=3)
+
+        self._dup_warn_lbl = tk.Label(inner, text="", font=F_SMALL,
+                                      bg=C["bg"], fg=C["warning"], wraplength=280, justify="left")
+        self._dup_warn_lbl.grid(row=14, column=0, columnspan=3, pady=(0, 4))
 
         tk.Frame(inner, bg=C["border"], height=1).grid(
-            row=13, column=0, columnspan=3, sticky="ew", padx=4, pady=6)
+            row=15, column=0, columnspan=3, sticky="ew", padx=4, pady=6)
 
         tk.Label(inner, text="Preview:", font=F_BOLD,
                  bg=C["bg"], fg=C["text_muted"], anchor="w").grid(
-                     row=14, column=0, columnspan=3, sticky="w", padx=4, pady=(4, 0))
+                     row=16, column=0, columnspan=3, sticky="w", padx=4, pady=(4, 0))
 
         out_frame = tk.Frame(inner, bg=C["bg"])
-        out_frame.grid(row=15, column=0, columnspan=3, sticky="nsew", padx=4, pady=(2, 4))
-        inner.rowconfigure(15, weight=1)
+        out_frame.grid(row=17, column=0, columnspan=3, sticky="nsew", padx=4, pady=(2, 4))
+        inner.rowconfigure(17, weight=1)
         out_frame.rowconfigure(0, weight=1)
         out_frame.columnconfigure(0, weight=1)
-        self._out_tv_wrap = out_frame   # placeholder; rebuilt on build
+        self._out_tv_wrap = out_frame   # rebuilt on each _build_output call
 
     # ── Load match results ────────────────────────────────────────────────
 
@@ -509,11 +520,38 @@ class ResultHelperTab(ttk.Frame):
                                    "Pick at least one output column for at least one scenario.")
             return
 
+        # Store individual scenario frames for separate-sheet export
+        self._scenario_frames = {
+            f["_scenario"].iloc[0]: f for f in frames
+        }
         self._output_df = pd.concat(frames, ignore_index=True).fillna("")
+
+        # ── Duplicate key detection ────────────────────────────────────────
+        dup_msgs: List[str] = []
+        for sc_name, sc_df in self._scenario_frames.items():
+            key_col = "query" if sc_name in ("matched", "unmatched_A") else "best_match"
+            if key_col in sc_df.columns:
+                dup_mask = sc_df[key_col].duplicated(keep=False) & (sc_df[key_col] != "")
+                if dup_mask.any():
+                    dup_vals = sc_df.loc[dup_mask, key_col].unique().tolist()[:5]
+                    sample = ", ".join(f'"{v}"' for v in dup_vals)
+                    more = f" … (+{len(sc_df.loc[dup_mask, key_col].unique()) - 5} more)" \
+                           if len(sc_df.loc[dup_mask, key_col].unique()) > 5 else ""
+                    dup_msgs.append(f"{sc_name}: duplicated keys [{sample}{more}]")
+
+        if dup_msgs:
+            self._dup_warn_lbl.configure(
+                text="⚠ Duplicate keys detected (preserved from source):\n" + "\n".join(dup_msgs))
+        else:
+            self._dup_warn_lbl.configure(text="")
+
         self._refresh_output_preview()
         n = len(self._output_df)
+        summary = ", ".join(
+            f"{sc}: {len(df)}" for sc, df in self._scenario_frames.items()
+        )
         self._build_status.configure(
-            text=f"Built ✓  {n} rows  ({', '.join(f[chr(39) + '_scenario' + chr(39)].iloc[0] + ': ' + str(len(f)) for f in frames)})",
+            text=f"Built ✓  {n} total rows  ({summary})",
             fg=C["success"])
 
     def _refresh_output_preview(self) -> None:
@@ -521,16 +559,56 @@ class ResultHelperTab(ttk.Frame):
             return
         for w in self._out_tv_wrap.winfo_children():
             w.destroy()
-        cols = list(self._output_df.columns)
-        widths = {c: max(60, min(160, len(c) * 9)) for c in cols}
-        tv_wrap, tv = make_treeview(self._out_tv_wrap, tuple(cols), col_widths=widths)
-        tv_wrap.grid(row=0, column=0, sticky="nsew")
         self._out_tv_wrap.rowconfigure(0, weight=1)
         self._out_tv_wrap.columnconfigure(0, weight=1)
-        for _, row in self._output_df.head(20).iterrows():
-            tv.insert("", "end", values=tuple(str(row[c]) for c in cols))
+
+        if len(self._scenario_frames) <= 1:
+            # Single scenario → plain treeview
+            df = self._output_df
+            cols = list(df.columns)
+            widths = {c: max(60, min(160, len(c) * 9)) for c in cols}
+            tv_wrap, tv = make_treeview(self._out_tv_wrap, tuple(cols), col_widths=widths)
+            tv_wrap.grid(row=0, column=0, sticky="nsew")
+            for _, row in df.head(20).iterrows():
+                tv.insert("", "end", values=tuple(str(row[c]) for c in cols))
+        else:
+            # Multiple scenarios → mini notebook for preview
+            inner_nb = ttk.Notebook(self._out_tv_wrap)
+            inner_nb.grid(row=0, column=0, sticky="nsew")
+            for sc_name, sc_df in self._scenario_frames.items():
+                tab = tk.Frame(inner_nb, bg=C["bg"])
+                tab.rowconfigure(0, weight=1)
+                tab.columnconfigure(0, weight=1)
+                cols = list(sc_df.columns)
+                widths = {c: max(60, min(160, len(c) * 9)) for c in cols}
+                tv_wrap, tv = make_treeview(tab, tuple(cols), col_widths=widths)
+                tv_wrap.grid(row=0, column=0, sticky="nsew")
+                for _, row in sc_df.head(20).iterrows():
+                    tv.insert("", "end", values=tuple(str(row[c]) for c in cols))
+                inner_nb.add(tab, text=f"  {sc_name}  ")
 
     def _export(self) -> None:
         if self._output_df is None or self._output_df.empty:
             messagebox.showinfo("Nothing", "Build the output first."); return
-        _save_df(self._output_df)
+
+        if self._split_var.get() and self._scenario_frames:
+            # Separate sheets — must be Excel
+            path = filedialog.asksaveasfilename(
+                defaultextension=".xlsx",
+                filetypes=[("Excel", "*.xlsx"), ("All", "*.*")],
+                title="Export — separate sheets (Excel only)",
+            )
+            if not path:
+                return
+            try:
+                with pd.ExcelWriter(path, engine="openpyxl") as writer:
+                    for sc_name, sc_df in self._scenario_frames.items():
+                        sheet_name = sc_name[:31]  # Excel sheet name limit
+                        sc_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                messagebox.showinfo("Exported",
+                    f"Saved to:\n{path}\n\nSheets: {', '.join(self._scenario_frames)}"
+                )
+            except Exception as exc:
+                messagebox.showerror("Save error", str(exc))
+        else:
+            _save_df(self._output_df)
