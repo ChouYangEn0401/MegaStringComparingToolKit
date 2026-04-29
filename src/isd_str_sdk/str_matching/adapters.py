@@ -6,10 +6,10 @@ from isd_str_sdk.str_matching.strategies.exact_matching import ExactMatchStrateg
 from isd_str_sdk.str_matching.strategies.structure_matching import InStringStrategy, TwoSideInStringStrategy, TwoSideInWith3WordsStringStrategy
 from isd_str_sdk.str_matching.strategies.structure_matching import LetterLCSStrategy, WordLCSStrategy, JaccardStrategy
 from isd_str_sdk.str_matching.strategies.fuzzy_matching import FuzzyRatioStrategy, LevenshteinStrategy, JaroWinklerStrategy
-from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
-#     from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
-# except Exception:
-#     EmbeddingSimilarityStrategy = None
+try:
+    from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
+except ImportError:
+    EmbeddingSimilarityStrategy = None
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
 from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone

@@ -83,6 +83,24 @@ def _save_df(df: "pd.DataFrame") -> None:
         messagebox.showerror("Save error", str(exc))
 
 
+# Ensure DataFrame column labels are unique to avoid pandas merge errors.
+def _ensure_unique_columns(df: "pd.DataFrame", suffix: str = "_dup") -> "pd.DataFrame":
+    cols = list(df.columns)
+    seen = {}
+    new_cols = []
+    for c in cols:
+        if c in seen:
+            seen[c] += 1
+            # first duplicate gets suffix, subsequent duplicates get numeric suffix
+            new_name = f"{c}{suffix}" if seen[c] == 1 else f"{c}{suffix}{seen[c]}"
+            new_cols.append(new_name)
+        else:
+            seen[c] = 0
+            new_cols.append(c)
+    df.columns = new_cols
+    return df
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  TablePanel — reusable left/right table loader pane
 # ─────────────────────────────────────────────────────────────────────────────
@@ -470,11 +488,15 @@ class ResultHelperTab(ttk.Frame):
                 a_sub = self._pa.df[[self._pa.key_column] + [
                     c for c in sel_a if c != self._pa.key_column]].copy()
                 a_sub = a_sub.rename(columns={self._pa.key_column: "query"})
+                # Make sure columns are unique (user may have selected another column named 'query')
+                a_sub = _ensure_unique_columns(a_sub, suffix="_A")
                 base = base.merge(a_sub, on="query", how="left", suffixes=("", "_A"))
             if sel_b and tb_ok:
                 b_sub = self._pb.df[[self._pb.key_column] + [
                     c for c in sel_b if c != self._pb.key_column]].copy()
                 b_sub = b_sub.rename(columns={self._pb.key_column: "best_match"})
+                # Ensure unique column labels to avoid duplicate-name errors
+                b_sub = _ensure_unique_columns(b_sub, suffix="_B")
                 base = base.merge(b_sub, on="best_match", how="left", suffixes=("", "_B"))
             base.insert(0, "_scenario", "matched")
             frames.append(base)
@@ -492,6 +514,8 @@ class ResultHelperTab(ttk.Frame):
             if cols_needed:
                 ua_out = unmatched_a[[ka] + [c for c in cols_needed if c != ka]].copy()
                 ua_out = ua_out.rename(columns={ka: "query"})
+                # Ensure unique columns to avoid collisions when concatenating
+                ua_out = _ensure_unique_columns(ua_out, suffix="_A")
                 ua_out["best_match"] = ""
                 ua_out["score"] = ""
                 ua_out.insert(0, "_scenario", "unmatched_A")
@@ -510,6 +534,8 @@ class ResultHelperTab(ttk.Frame):
             if cols_needed:
                 ub_out = unmatched_b[[kb] + [c for c in cols_needed if c != kb]].copy()
                 ub_out = ub_out.rename(columns={kb: "best_match"})
+                # Ensure unique columns to avoid collisions when concatenating
+                ub_out = _ensure_unique_columns(ub_out, suffix="_B")
                 ub_out["query"] = ""
                 ub_out["score"] = ""
                 ub_out.insert(0, "_scenario", "unmatched_B")
