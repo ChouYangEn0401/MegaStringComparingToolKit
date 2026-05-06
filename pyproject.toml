@@ -23,6 +23,7 @@ dependencies = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -47,3 +48,9 @@ nlp = [
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+[tool.setuptools.package-data]
+"isd_str_sdk" = [
+    "str_cleaning/strategies/pre_contexted/*.xlsx",
+    "str_cleaning/strategies/pre_contexted/*.csv",
+]

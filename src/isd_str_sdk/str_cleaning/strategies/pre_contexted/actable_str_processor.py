@@ -2,6 +2,8 @@ import pandas as pd
 from pathlib import Path
 from enum import IntFlag, auto
 from typing import Dict
+import importlib.resources as _resources
+import warnings
 
 from isd_str_sdk.base.IStrProcessorContext import IStrProcessorContext
 
@@ -60,11 +62,65 @@ class UnionLetterExcelACTableContext(IStrProcessorContext):
 
     # ========= Load & Compress =========
     def _data_init(self) -> None:
-        df = pd.read_excel(
-            Path(__file__).parent / "權控分析_資料前處理_統一詞彙用權控表.xlsx"
-        )
+        # Try to load packaged Excel first (preferred), then fallback to CSV.
+        # Use importlib.resources to support zipped installations.
+        pkg = "isd_str_sdk.str_cleaning.strategies.pre_contexted"
+        xlsx_name = "權控分析_資料前處理_統一詞彙用權控表.xlsx"
+        csv_name = "權控分析_資料前處理_統一詞彙用權控表.csv"
 
-        df = df[df["啟用狀態"] == 1]
+        df = None
+        try:
+            res = _resources.files(pkg).joinpath(xlsx_name)
+            with _resources.as_file(res) as fp:
+                df = pd.read_excel(fp)
+        except Exception:
+            df = None
+
+        if df is None:
+            try:
+                res = _resources.files(pkg).joinpath(csv_name)
+                with _resources.as_file(res) as fp:
+                    df = pd.read_csv(fp, dtype=str)
+            except Exception:
+                df = None
+
+        # If packaged resources are not available, allow an environment override
+        if df is None:
+            alt = None
+            try:
+                import os
+                alt = os.environ.get("ISD_ACTABLE_PATH")
+            except Exception:
+                alt = None
+
+            if alt:
+                alt_p = Path(alt)
+                if alt_p.exists():
+                    try:
+                        if alt_p.suffix.lower() in (".xls", ".xlsx"):
+                            df = pd.read_excel(alt_p)
+                        else:
+                            df = pd.read_csv(alt_p, dtype=str)
+                    except Exception:
+                        df = None
+
+        if df is None:
+            warnings.warn(
+                "ACTable mapping resource not found. Using empty table. "
+                "To provide mappings, add 'pre_contexted/權控分析_資料前處理_統一詞彙用權控表.xlsx' "
+                "or '.csv' into the package directory, or set ISD_ACTABLE_PATH=...",
+                UserWarning,
+            )
+            df = pd.DataFrame(columns=["啟用狀態", "種類", "權控前", "權控後"])
+
+        # normalize dtypes
+        try:
+            if not df.empty:
+                df = df.astype({"啟用狀態": "int"}, errors="ignore")
+        except Exception:
+            pass
+
+        df = df[df["啟用狀態"] == 1] if "啟用狀態" in df.columns else df
 
         # 初始化每種類型的 table
         self._tables = {
