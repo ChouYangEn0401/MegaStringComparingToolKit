@@ -32,7 +32,7 @@ try:
         STRATEGY_PARAM_META as MATCHING_PARAM_META,
         get_strategy_param_meta,
     )
-    from isd_str_sdk.TDD.run_strategy_tests import run_strategy_test  # noqa: F401
+    from isd_str_sdk.TDD.test_structure import run_strategy_test  # noqa: F401
     from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
     SDK_OK = True
     SDK_ERROR = ""

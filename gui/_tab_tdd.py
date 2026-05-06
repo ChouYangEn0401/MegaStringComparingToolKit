@@ -1,9 +1,10 @@
-"""_tab_tdd.py — TDD Workbench tab."""
+"""_tab_tdd.py — TDD Workbench tab (Matching + Cleaning)."""
 from __future__ import annotations
 
+import csv
 import threading
 import traceback
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -11,12 +12,43 @@ from tkinter import ttk, filedialog, messagebox
 from gui._shared import (
     C, F_BODY, F_BOLD, F_H2, F_SMALL,
     SDK_OK, SDK_ERROR,
-    MATCHING_TABLE, TwoSeriesComparisonContext,
+    MATCHING_TABLE, NOPARS_STRATEGY_TABLE, CLEANING_PARS_TABLE,
+    TwoSeriesComparisonContext,
+    CleaningStrategyAdapter,
     make_treeview, hdr_label, section_sep,
 )
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+#  TDDTab — container with two sub-tabs
+# ═══════════════════════════════════════════════════════════════════════════════
+
 class TDDTab(ttk.Frame):
+    """Outer tab that hosts Matching TDD and Cleaning TDD sub-tabs."""
+
+    def __init__(self, notebook: ttk.Notebook) -> None:
+        super().__init__(notebook)
+        self._build()
+
+    def _build(self) -> None:
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+
+        sub_nb = ttk.Notebook(self)
+        sub_nb.grid(row=0, column=0, sticky="nsew")
+
+        matching_pane = _MatchingTDDPane(sub_nb)
+        cleaning_pane = _CleaningTDDPane(sub_nb)
+
+        sub_nb.add(matching_pane, text="  🔬  Matching TDD  ")
+        sub_nb.add(cleaning_pane, text="  🧹  Cleaning TDD  ")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  _MatchingTDDPane — matching strategy TDD (left: cases · mid: config · right: results)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class _MatchingTDDPane(ttk.Frame):
 
     _UNDONE_NAMES = {
         "OnDevStrategy", "_on_dev_strategy_",
@@ -174,9 +206,9 @@ class TDDTab(ttk.Frame):
 
         tv_wrap, self._res_tv = make_treeview(
             p,
-            ("status", "left", "right", "got", "expected"),
-            col_widths={"status": 46, "left": 150, "right": 150, "got": 60, "expected": 70},
-            col_anchors={"status": "center", "got": "center", "expected": "center"},
+            ("status", "left", "right", "score", "got", "expected"),
+            col_widths={"status": 46, "left": 130, "right": 130, "score": 58, "got": 58, "expected": 70},
+            col_anchors={"status": "center", "score": "center", "got": "center", "expected": "center"},
         )
         tv_wrap.pack(fill="both", expand=True, padx=8, pady=(8, 4))
         self._res_tv.tag_configure("pass", background=C["success_bg"])
@@ -242,7 +274,6 @@ class TDDTab(ttk.Frame):
             filetypes=[("CSV", "*.csv"), ("All", "*.*")])
         if not path:
             return
-        import csv
         try:
             with open(path, newline="", encoding="utf-8-sig") as f:
                 reader = csv.DictReader(f)
@@ -341,6 +372,7 @@ class TDDTab(ttk.Frame):
                     detail.append({
                         "correct": r.success == exp,
                         "left": left, "right": right,
+                        "score": f"{r.score:.4f}" if r.score is not None else "N/A",
                         "got": r.success, "expected": exp,
                     })
             except Exception:
@@ -369,7 +401,7 @@ class TDDTab(ttk.Frame):
             status = "✓" if d["correct"] else "✗"
             self._res_tv.insert("", "end", tags=(tag,),
                 values=(status, d["left"], d["right"],
-                        str(d["got"]), str(d["expected"])))
+                        d["score"], str(d["got"]), str(d["expected"])))
 
         for i, d in enumerate(detail):
             self._tv.item(str(i), tags=("pass_row" if d["correct"] else "fail_row",))
@@ -381,3 +413,364 @@ class TDDTab(ttk.Frame):
         self._run_status.configure(
             text="ALL PASS ✓" if failed == 0 else f"{failed} FAIL(s) ✗",
             fg=color)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  _CleaningTDDPane — cleaning processor TDD (left: cases · mid: config · right: results)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class _CleaningTDDPane(ttk.Frame):
+
+    def __init__(self, notebook: ttk.Notebook) -> None:
+        super().__init__(notebook)
+        self._test_rows: List[Dict[str, Any]] = []
+        # Combine no-param and param tables; NOPARS shown plain, pars shown with ★
+        nopars = sorted(NOPARS_STRATEGY_TABLE.keys()) if SDK_OK else []
+        pars   = sorted(CLEANING_PARS_TABLE.keys())   if SDK_OK else []
+        self._all_processors = nopars + pars
+        initial = nopars[0] if nopars else ""
+        self._processor_var = tk.StringVar(value=initial)
+        self._mode_var      = tk.StringVar(value="wrong_answer")
+        self._build()
+
+    def _build(self) -> None:
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=4, minsize=280)
+        self.columnconfigure(1, weight=1, minsize=185)
+        self.columnconfigure(2, weight=4, minsize=280)
+
+        self._pe = tk.Frame(self, bg=C["surface"])
+        self._pc = tk.Frame(self, bg=C["bg"])
+        self._pr = tk.Frame(self, bg=C["surface"])
+        self._pe.grid(row=0, column=0, sticky="nsew", padx=(0, 1))
+        self._pc.grid(row=0, column=1, sticky="nsew", padx=1)
+        self._pr.grid(row=0, column=2, sticky="nsew", padx=(1, 0))
+
+        self._build_editor()
+        self._build_config()
+        self._build_results()
+
+    # ── Editor (left) ─────────────────────────────────────────────────────────
+
+    def _build_editor(self) -> None:
+        p = self._pe
+        p.columnconfigure(0, weight=1)
+        p.rowconfigure(2, weight=1)
+
+        hdr_row = tk.Frame(p, bg=C["hdr_bg"])
+        hdr_row.grid(row=0, column=0, sticky="ew")
+        tk.Label(hdr_row, text="① Test Cases", font=F_H2,
+                 bg=C["hdr_bg"], fg=C["hdr_fg"], anchor="w", padx=12, pady=8).pack(side="left")
+        self._row_count_lbl = tk.Label(hdr_row, text="0 rows",
+                                       font=F_SMALL, bg=C["hdr_bg"], fg="#a5b4fc")
+        self._row_count_lbl.pack(side="right", padx=12)
+
+        toolbar = tk.Frame(p, bg=C["surface"])
+        toolbar.grid(row=1, column=0, sticky="ew", padx=6, pady=6)
+        for text, cmd in (
+            ("+ Add",      self._add_row),
+            ("✕ Remove",   self._remove_row),
+            ("▲",          self._move_row_up),
+            ("▼",          self._move_row_down),
+            ("Clear All",  self._clear_rows),
+        ):
+            ttk.Button(toolbar, text=text, command=cmd).pack(side="left", padx=2)
+        ttk.Button(toolbar, text="Import CSV",
+                   command=self._import_csv).pack(side="right", padx=2)
+
+        tv_wrap, self._tv = make_treeview(
+            p,
+            ("#", "input", "expected"),
+            col_widths={"#": 32, "input": 210, "expected": 210},
+            col_anchors={"#": "center"},
+        )
+        tv_wrap.grid(row=2, column=0, sticky="nsew", padx=6, pady=(0, 4))
+        self._tv.tag_configure("pass_row", background=C["success_bg"])
+        self._tv.tag_configure("fail_row", background=C["danger_bg"])
+        self._tv.bind("<Double-Button-1>", self._on_cell_dblclick)
+
+        tk.Label(p, text="Double-click a cell to edit  ·  CSV columns: input, expected",
+                 font=F_SMALL, bg=C["surface"], fg=C["text_muted"]).grid(
+                     row=3, column=0, sticky="w", padx=6, pady=(0, 4))
+
+    # ── Config (middle) ───────────────────────────────────────────────────────
+
+    def _build_config(self) -> None:
+        p = self._pc
+        p.columnconfigure(0, weight=1)
+        hdr_label(p, "② Config")
+
+        inner = tk.Frame(p, bg=C["bg"])
+        inner.pack(fill="both", expand=True, padx=8, pady=8)
+        inner.columnconfigure(0, weight=1)
+
+        tk.Label(inner, text="Processor:", font=F_BOLD,
+                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x", pady=(0, 2))
+        self._proc_combo = ttk.Combobox(
+            inner, values=self._all_processors,
+            textvariable=self._processor_var,
+            state="readonly", font=F_BODY,
+        )
+        self._proc_combo.pack(fill="x", pady=(0, 4))
+        self._proc_combo.bind("<<ComboboxSelected>>", self._on_proc_change)
+
+        self._proc_badge = tk.Label(inner, text="", font=F_SMALL,
+                                    bg=C["success_bg"], fg="#065f46",
+                                    relief="flat", padx=6, pady=2)
+        self._proc_badge.pack(fill="x", pady=(0, 4))
+
+        section_sep(inner, 0)
+
+        # Param entry — shown only for param-processors
+        self._param_frame = tk.Frame(inner, bg=C["bg"])
+        self._param_frame.pack(fill="x", pady=(4, 0))
+        self._param_frame.columnconfigure(0, weight=1)
+        tk.Label(self._param_frame, text="Param (processor arg):", font=F_BOLD,
+                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x")
+        self._param_hint = tk.Label(self._param_frame, text="",
+                                    font=F_SMALL, bg=C["bg"], fg=C["text_muted"],
+                                    wraplength=155, justify="left", anchor="w")
+        self._param_hint.pack(fill="x")
+        self._param_var = tk.StringVar()
+        self._param_entry = ttk.Entry(self._param_frame, textvariable=self._param_var,
+                                      font=F_BODY)
+        self._param_entry.pack(fill="x", pady=(2, 0))
+
+        section_sep(inner, 0)
+
+        tk.Label(inner, text="Display mode:", font=F_BOLD,
+                 bg=C["bg"], fg=C["text"], anchor="w").pack(fill="x", pady=(4, 0))
+        for val, txt in (("show_all", "Show all"), ("wrong_answer", "Wrong only")):
+            tk.Radiobutton(
+                inner, text=txt, variable=self._mode_var, value=val,
+                bg=C["bg"], fg=C["text"], activebackground=C["accent_lt"],
+                selectcolor=C["accent_lt"], font=F_BODY, relief="flat", cursor="hand2",
+            ).pack(anchor="w")
+
+        section_sep(inner, 0)
+
+        tk.Button(inner, text="  ▶  Run Tests", font=F_BOLD,
+                  bg=C["success"], fg="#fff", relief="flat", cursor="hand2",
+                  activebackground="#059669",
+                  command=self._run_tests).pack(fill="x", pady=(8, 4))
+
+        self._run_status = tk.Label(inner, text="", font=F_BOLD,
+                                    bg=C["bg"], fg=C["text_muted"])
+        self._run_status.pack(pady=4)
+
+        self._on_proc_change()
+
+    # ── Results (right) ───────────────────────────────────────────────────────
+
+    def _build_results(self) -> None:
+        p = self._pr
+        p.columnconfigure(0, weight=1)
+        p.rowconfigure(1, weight=1)
+
+        hdr_label(p, "③ Test Results")
+
+        tv_wrap, self._res_tv = make_treeview(
+            p,
+            ("status", "input", "got", "expected"),
+            col_widths={"status": 46, "input": 150, "got": 150, "expected": 150},
+            col_anchors={"status": "center"},
+        )
+        tv_wrap.pack(fill="both", expand=True, padx=8, pady=(8, 4))
+        self._res_tv.tag_configure("pass", background=C["success_bg"])
+        self._res_tv.tag_configure("fail", background=C["danger_bg"])
+
+        self._summary_lbl = tk.Label(p, text="No results yet.", font=F_BOLD,
+                                     bg=C["surface2"], fg=C["text_muted"],
+                                     anchor="w", padx=10, pady=6)
+        self._summary_lbl.pack(fill="x", padx=8, pady=(0, 8))
+
+    # ── Row operations ────────────────────────────────────────────────────────
+
+    def _refresh_tv(self) -> None:
+        self._tv.delete(*self._tv.get_children())
+        for i, row in enumerate(self._test_rows):
+            self._tv.insert("", "end", iid=str(i),
+                            values=(i + 1, row["input"], row["expected"]))
+        self._row_count_lbl.configure(text=f"{len(self._test_rows)} rows")
+
+    def _add_row(self) -> None:
+        self._test_rows.append({"input": "input text", "expected": "expected text"})
+        self._refresh_tv()
+        kids = self._tv.get_children()
+        if kids:
+            self._tv.selection_set(kids[-1])
+            self._tv.see(kids[-1])
+
+    def _remove_row(self) -> None:
+        sel = self._tv.selection()
+        if sel:
+            self._test_rows.pop(int(sel[0]))
+            self._refresh_tv()
+
+    def _move_row_up(self) -> None:
+        sel = self._tv.selection()
+        if not sel:
+            return
+        i = int(sel[0])
+        if i == 0:
+            return
+        self._test_rows[i - 1], self._test_rows[i] = self._test_rows[i], self._test_rows[i - 1]
+        self._refresh_tv()
+        self._tv.selection_set(str(i - 1))
+
+    def _move_row_down(self) -> None:
+        sel = self._tv.selection()
+        if not sel:
+            return
+        i = int(sel[0])
+        if i >= len(self._test_rows) - 1:
+            return
+        self._test_rows[i], self._test_rows[i + 1] = self._test_rows[i + 1], self._test_rows[i]
+        self._refresh_tv()
+        self._tv.selection_set(str(i + 1))
+
+    def _clear_rows(self) -> None:
+        self._test_rows.clear()
+        self._refresh_tv()
+
+    def _import_csv(self) -> None:
+        path = filedialog.askopenfilename(
+            filetypes=[("CSV", "*.csv"), ("All", "*.*")])
+        if not path:
+            return
+        try:
+            with open(path, newline="", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    self._test_rows.append({
+                        "input":    r.get("input", ""),
+                        "expected": r.get("expected", ""),
+                    })
+            self._refresh_tv()
+        except Exception as e:
+            messagebox.showerror("Import error", str(e))
+
+    def _on_cell_dblclick(self, event: tk.Event) -> None:
+        if self._tv.identify_region(event.x, event.y) != "cell":
+            return
+        item = self._tv.identify_row(event.y)
+        col  = self._tv.identify_column(event.x)
+        if not item:
+            return
+        col_idx  = int(col.lstrip("#")) - 1
+        col_name = ("#", "input", "expected")[col_idx]
+        if col_name == "#":
+            return
+
+        row_idx = int(item)
+        bbox = self._tv.bbox(item, col)
+        if not bbox:
+            return
+        x, y, w, h = bbox
+        var = tk.StringVar(value=str(self._test_rows[row_idx].get(col_name, "")))
+        popup = tk.Entry(self._tv, textvariable=var, font=F_BODY,
+                         bg=C["accent_lt"], fg=C["accent_dk"], relief="flat", bd=1,
+                         insertbackground=C["accent"])
+        popup.place(x=x, y=y, width=w, height=h)
+        popup.focus_set()
+        popup.select_range(0, "end")
+
+        def _commit(_=None) -> None:
+            self._test_rows[row_idx][col_name] = var.get()
+            popup.destroy()
+            self._refresh_tv()
+
+        popup.bind("<Return>",   _commit)
+        popup.bind("<FocusOut>", _commit)
+        popup.bind("<Escape>",   lambda _: popup.destroy())
+
+    # ── Processor badge / param hint ──────────────────────────────────────────
+
+    def _on_proc_change(self, _=None) -> None:
+        name = self._processor_var.get()
+        is_param = name in CLEANING_PARS_TABLE
+        if is_param:
+            self._proc_badge.configure(
+                text=f"★  {name}  — needs a param",
+                bg=C["undone_bg"], fg=C["undone_fg"])
+            from gui._shared import PARAM_META
+            meta = PARAM_META.get(name, ("", ""))
+            kind, hint = meta if len(meta) == 2 else (meta[0], "")
+            self._param_hint.configure(text=f"type: {kind}  —  {hint}")
+            self._param_entry.configure(state="normal")
+        else:
+            self._proc_badge.configure(
+                text=f"✓  {name}  — no param needed",
+                bg=C["success_bg"], fg="#065f46")
+            self._param_hint.configure(text="")
+            self._param_entry.configure(state="disabled")
+
+    # ── Run tests ─────────────────────────────────────────────────────────────
+
+    def _run_tests(self) -> None:
+        if not SDK_OK:
+            messagebox.showerror("SDK unavailable", SDK_ERROR); return
+        if not self._test_rows:
+            messagebox.showwarning("No cases", "Add test cases first."); return
+
+        proc_name = self._processor_var.get()
+        is_param  = proc_name in CLEANING_PARS_TABLE
+        raw_param = self._param_var.get().strip()
+
+        tests = [(r["input"], r["expected"]) for r in self._test_rows]
+        self._run_status.configure(text="Running…", fg=C["warning"])
+        self.update_idletasks()
+
+        def _worker() -> None:
+            detail: list = []
+            try:
+                if is_param:
+                    adapter = CleaningStrategyAdapter(proc_name, raw_param)
+                else:
+                    adapter = CleaningStrategyAdapter(proc_name)
+                for input_str, expected in tests:
+                    got = adapter.run(input_str)
+                    detail.append({
+                        "correct": got == expected,
+                        "input": input_str,
+                        "got": got,
+                        "expected": expected,
+                    })
+            except Exception:
+                err = traceback.format_exc()
+                self.after(0, lambda: (
+                    messagebox.showerror("Run error", err),
+                    self._run_status.configure(text="Error", fg=C["danger"]),
+                ))
+                return
+            self.after(0, lambda d=detail: self._show_test_results(d))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _show_test_results(self, detail: list) -> None:
+        for item in self._res_tv.get_children():
+            self._res_tv.delete(item)
+
+        passed = sum(1 for d in detail if d["correct"])
+        failed = len(detail) - passed
+        mode   = self._mode_var.get()
+
+        for d in detail:
+            if mode == "wrong_answer" and d["correct"]:
+                continue
+            tag    = "pass" if d["correct"] else "fail"
+            status = "✓" if d["correct"] else "✗"
+            self._res_tv.insert("", "end", tags=(tag,),
+                values=(status, d["input"], d["got"], d["expected"]))
+
+        for i, d in enumerate(detail):
+            self._tv.item(str(i), tags=("pass_row" if d["correct"] else "fail_row",))
+
+        color = C["success"] if failed == 0 else C["danger"]
+        self._summary_lbl.configure(
+            text=f"  PASS {passed} / {len(detail)}   │   FAIL {failed} / {len(detail)}",
+            fg=color)
+        self._run_status.configure(
+            text="ALL PASS ✓" if failed == 0 else f"{failed} FAIL(s) ✗",
+            fg=color)
+

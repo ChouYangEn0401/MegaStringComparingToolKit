@@ -1,4 +1,4 @@
-from isd_str_sdk.TDD.run_strategy_tests import run_strategy_test
+from isd_str_sdk.TDD.test_structure import run_matching_test
 from isd_str_sdk.str_matching.adapters import AbbrevExactMatchStrategy, PreprocessedAbbrevExactStrategy
 
 TESTS = [
@@ -24,5 +24,5 @@ TESTS = [
 ]
 
 if __name__ == "__main__":
-    # run_strategy_test(AbbrevExactMatchStrategy, TESTS, "show_all")
-    run_strategy_test(PreprocessedAbbrevExactStrategy, TESTS, "wrong_answer")
+    # run_matching_test(AbbrevExactMatchStrategy, TESTS, "show_all")
+    run_matching_test(PreprocessedAbbrevExactStrategy, TESTS, "wrong_answer")

@@ -1,14 +1,34 @@
-from isd_str_sdk.str_matching.adapters import *
-from isd_str_sdk.TDD.run_strategy_tests import run_strategy_test, run_str_processor_test
+"""
+test_tdd.py — Quick TDD smoke-test for both str_matching and str_cleaning.
 
-# 比對兩欄位是否匹配的策略
-run_strategy_test(FuzzyRatioStrategy, [
+Run directly:
+    python tests/test_tdd.py
+
+Or via the top-level import shortcut:
+    from isd_str_sdk import run_matching_test, run_cleaning_test
+"""
+
+from isd_str_sdk import run_matching_test, run_cleaning_test
+from isd_str_sdk.str_matching.strategies.fuzzy_matching import FuzzyRatioStrategy
+from isd_str_sdk.str_cleaning.strategies.base_str_processors import (
+    StrFunc_Lowercase,
+    StrFunc_NormalizeWhitespace,
+)
+
+# ── Matching TDD ──────────────────────────────────────────────────────────────
+run_matching_test(FuzzyRatioStrategy, [
     ("ABC", "ABC Inc.", True),
     ("ABC", "XYZ", False),
-], print_mode="wrong_answer")
+], print_mode="show_all", standard=0.5)
 
-# 單一字串處理器
-run_str_processor_test(AbbrevExactMatchStrategy, [
-    ("Hello  World", "Hello World"),
-    ("  abc  ", "abc"),
+# ── Cleaning TDD ──────────────────────────────────────────────────────────────
+run_cleaning_test(StrFunc_Lowercase, [
+    ("HELLO WORLD", "hello world"),
+    ("abc", "abc"),
 ], print_mode="show_all")
+
+run_cleaning_test(StrFunc_NormalizeWhitespace, [
+    ("  Hello   World  ", "Hello World"),
+    ("already clean", "already clean"),
+], print_mode="show_all")
+
