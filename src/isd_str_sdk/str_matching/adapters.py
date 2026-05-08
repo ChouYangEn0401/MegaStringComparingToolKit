@@ -6,10 +6,21 @@ from isd_str_sdk.str_matching.strategies.exact_matching import ExactMatchStrateg
 from isd_str_sdk.str_matching.strategies.structure_matching import InStringStrategy, TwoSideInStringStrategy, TwoSideInWith3WordsStringStrategy
 from isd_str_sdk.str_matching.strategies.structure_matching import LetterLCSStrategy, WordLCSStrategy, JaccardStrategy
 from isd_str_sdk.str_matching.strategies.fuzzy_matching import FuzzyRatioStrategy, LevenshteinStrategy, JaroWinklerStrategy
-try:
-    from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
-except ImportError:
+import warnings
+import os
+
+# Optional NLP strategy: allow disabling via environment, and tolerate any import error
+if os.environ.get("ISD_DISABLE_NLP", "").lower() in ("1", "true", "yes", "on"):
     EmbeddingSimilarityStrategy = None
+else:
+    try:
+        from isd_str_sdk.str_matching.strategies.nlp_matching import EmbeddingSimilarityStrategy
+    except Exception as _e:  # catch anything (ImportError, AttributeError, OSError from compiled deps, etc.)
+        warnings.warn(
+            f"Optional NLP strategy unavailable: {type(_e).__name__}: {_e}",
+            ImportWarning,
+        )
+        EmbeddingSimilarityStrategy = None
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
 from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone
