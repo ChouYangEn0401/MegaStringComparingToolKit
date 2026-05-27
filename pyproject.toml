@@ -14,7 +14,6 @@ authors = [
     { name = "Anthony Chou", email = "mi.anthony.chou@gmail.com" },
 ]
 dependencies = [
-    "python-dotenv>=1.0.0",
     "rapidfuzz>=3.0",
     "regex>=2023.0",
     "pandas>=2.0",
@@ -39,7 +38,12 @@ dev = [
 ]
 nlp = [
     # Optional dependency for `EmbeddingSimilarityStrategy`
-    "sentence-transformers>=2.2.2"
+    "sentence-transformers>=2.2.2",
+    "numpy>=1.24",
+]
+all = [
+    "isd-str-sdk[dev]",
+    "isd-str-sdk[nlp]",
 ]
 
 # [project.scripts]
