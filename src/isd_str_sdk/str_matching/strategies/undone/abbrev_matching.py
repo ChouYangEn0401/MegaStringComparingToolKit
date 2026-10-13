@@ -2,7 +2,7 @@ from enum import Enum, auto, IntEnum
 from typing import List, Any, Type
 import re
 
-from isd_str_sdk.base import StrProcessorsChain
+from isd_str_sdk.base.StrProcessorsChain import StrProcessorsChain
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
 from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult

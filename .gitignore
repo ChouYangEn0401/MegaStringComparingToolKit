@@ -76,3 +76,7 @@ typings/
 .DS_Store
 Thumbs.db
 
+
+# package resources (AC table) must ship inside the wheel
+!src/isd_str_sdk/str_cleaning/strategies/pre_contexted/*.xlsx
+!src/isd_str_sdk/str_cleaning/strategies/pre_contexted/*.csv
