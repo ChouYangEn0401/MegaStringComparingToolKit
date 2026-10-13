@@ -250,3 +250,30 @@ class TestCompatibility:
     def test_lcs_none_legacy_test_still_holds(self):
         r = WordLCSStrategy("a", "b", standard=0.5).evaluate(_ctx(None, "hello"))
         assert r.success is False and r.score == pytest.approx(-1.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5. GUI metadata：get_strategy_param_meta 要把 NullPolicy 欄位帶給兩欄策略
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestParamMetaExposure:
+    def test_two_column_strategies_get_null_keys(self):
+        from isd_str_sdk.str_matching import get_strategy_param_meta
+        for name in ["EXACT", "FUZZY", "WordLCS", "JACCARD", "PREPROCESSED_EXACT", "TwoSideInStringStrategy"]:
+            meta = get_strategy_param_meta(name)
+            assert {"null_mode", "empty_is_null", "null_like"} <= set(meta), name
+
+    def test_strategy_own_keys_come_first_and_survive(self):
+        from isd_str_sdk.str_matching import get_strategy_param_meta
+        meta = get_strategy_param_meta("TwoSideInStringStrategy")
+        assert list(meta)[0] == "strategy_mode"
+        assert meta["strategy_mode"]["options"] == ["any", "a_in_b", "b_in_a"]
+
+    def test_logic_gates_do_not_get_null_keys(self):
+        from isd_str_sdk.str_matching import get_strategy_param_meta
+        assert "null_mode" not in get_strategy_param_meta("AND")
+        assert "null_mode" not in get_strategy_param_meta("OR")
+
+    def test_opt_out(self):
+        from isd_str_sdk.str_matching import get_strategy_param_meta
+        assert get_strategy_param_meta("FUZZY", include_null_policy=False) == {}

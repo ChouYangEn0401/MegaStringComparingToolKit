@@ -207,7 +207,10 @@ MatchingStrategyAdapter("WordLCS", standard=0.9, strategy_parameters={"null_like
 * `LetterLCS` / `WordLCS`：`None` 行為不變（本來就 -1.0）；**新增** NaN / pd.NA 也 -1.0。
 * 空字串 `""` 的既有行為全部不變（除非開 `empty_is_null`）。
 
-`NullPolicy.param_meta()` 回傳與 `STRATEGY_PARAM_META` 同 schema 的欄位描述，GUI 可直接拿去產生三個欄位。
+`NullPolicy.param_meta()` 回傳與 `STRATEGY_PARAM_META` 同 schema 的欄位描述。
+`get_strategy_param_meta(name)` 對所有兩欄策略會**自動附上**這三個欄位（策略自己的參數排前面；logic gate 不附），
+所以用這個 registry 動態產生設定 UI 的程式，不改一行就能讓使用者自己決定空值怎麼算。
+只想拿策略本身的參數：`get_strategy_param_meta(name, include_null_policy=False)`。
 
 ---
 

@@ -141,24 +141,42 @@ STRATEGY_PARAM_META: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_strategy_param_meta(name: str) -> Dict[str, Any]:
+# Strategies that compare two columns and therefore honour NullPolicy
+# (logic gates compare children results, not cells, so they are excluded).
+_TWO_COLUMN_STRATEGY_KEYS = {
+    "EXACT", "IN", "TwoSideInStringStrategy", "TwoSideInWith3WordsStringStrategy",
+    "LetterLCS", "WordLCS", "JACCARD", "FUZZY", "Levenshtein", "JaroWinkler",
+    "Embedding", "PREPROCESSED_EXACT",
+}
+
+
+def get_strategy_param_meta(name: str, include_null_policy: bool = True) -> Dict[str, Any]:
     """Return parameter metadata for a strategy by name.
 
-    Returns an ordered dict: {param_key: spec_dict}.
-    Empty dict means the strategy takes no extra parameters.
+    Returns an ordered dict: {param_key: spec_dict}. Strategy-specific keys come
+    first; for two-column strategies the three NullPolicy keys (``null_mode``,
+    ``empty_is_null``, ``null_like``) are appended so a GUI built on this
+    registry lets the user decide how empty cells are treated. Pass
+    ``include_null_policy=False`` to get only the strategy's own keys.
 
     Falls back to ``get_advanced_settings()`` on the class if the static
     registry has no entry (supports future self-describing strategies).
     """
+    own: Dict[str, Any] = {}
     if name in STRATEGY_PARAM_META:
-        return STRATEGY_PARAM_META[name]
-    cls = STRATEGY_TABLE.get(name)
-    if cls is not None and hasattr(cls, "get_advanced_settings"):
-        try:
-            return cls.__new__(cls).get_advanced_settings()
-        except Exception:
-            return {}
-    return {}
+        own = dict(STRATEGY_PARAM_META[name])
+    else:
+        cls = STRATEGY_TABLE.get(name)
+        if cls is not None and hasattr(cls, "get_advanced_settings"):
+            try:
+                own = dict(cls.__new__(cls).get_advanced_settings())
+            except Exception:
+                own = {}
+    if include_null_policy and name in _TWO_COLUMN_STRATEGY_KEYS:
+        from isd_str_sdk.str_matching.null_policy import NullPolicy
+        for key, spec in NullPolicy.param_meta().items():
+            own.setdefault(key, spec)
+    return own
 
 
 # ### REFACTOR: mvp simple one, we may need a much more stable and clean ###
