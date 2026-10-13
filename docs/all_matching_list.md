@@ -156,9 +156,58 @@ TwoSeriesComparisonContext(
 JaccardStrategy(df1="col_a", df2="col_b", standard=0.5)
 ```
 
-### None 輸入的行為
+### 空值處理（NullPolicy）
 
-`LetterLCSStrategy` 與 `WordLCSStrategy` 若任一欄為 `None`，回傳 `StrategyResult(success=False, score=-1.0)`。
+> 0.4.6 起適用於**所有**兩欄比對策略：EXACT / PREPROCESSED_EXACT / FUZZY / Levenshtein / JaroWinkler / JACCARD / LetterLCS / WordLCS / Embedding / IN 系列。
+
+**為什麼需要它**：pandas 讀 Excel 空格得到 `float('nan')`，舊版只擋 `None`，`"nan"` 會被當成字串進 tokenizer，
+兩個空格就以 1.0 分「配對成功」。NullPolicy 在算分前統一攔截。
+
+**什麼算 null**
+
+| 類別 | 預設 | 開關 |
+|---|---|---|
+| `None`、`float('nan')`、`numpy.nan`、`pd.NA`、`pd.NaT` | 永遠是 null | — |
+| `""` 與只有空白的字串 | 不是 | `empty_is_null=True` |
+| `"nan"`、`"none"`、`"n/a"`、`"-"` 等文字 | 不是（它們只是字串） | `null_like={"nan","none",...}`（不分大小寫、會 strip） |
+
+**三種模式**
+
+| `null_mode` | 任一側 null | 兩側皆 null | 適用 |
+|---|---|---|---|
+| `fail`（預設） | `success=False, score=-1.0` | 同左 | 權控比對：缺資料不該配對 |
+| `match_if_both` | `success=False, score=-1.0` | `success=True, score=1.0` | 「空白跟空白能不能比」→ 可以 |
+| `as_text` | 不攔截 | 不攔截 | 0.4.5 以前的 legacy 行為；要逐字比對 `"nan"` 字面時 |
+
+**三種給法**
+
+```python
+from isd_str_sdk.str_matching import NullPolicy, NullMode, MatchingStrategyAdapter
+from isd_str_sdk.str_matching.strategies.structure_matching import WordLCSStrategy
+
+# 1. 物件
+WordLCSStrategy("a", "b", standard=0.9, null_policy=NullPolicy(mode=NullMode.MATCH_IF_BOTH, empty_is_null=True))
+
+# 2. strategy_parameters dict（GUI / JSON 設定走這條；值可以是字串）
+WordLCSStrategy("a", "b", standard=0.9, strategy_parameters={
+    "null_mode": "match_if_both", "empty_is_null": "true", "null_like": "nan, none, n/a",
+})
+
+# 3. Level 2 adapter（**special_params 就是建構子 kwargs；adapter.run 只接受 str）
+MatchingStrategyAdapter("WordLCS", standard=0.9, strategy_parameters={"null_like": "nan, n/a"})
+```
+
+`null_score`（預設 `-1.0`）可改成 `0.0`，讓「null 失敗」與「比對 0 分」在報表上不區分。
+
+**行為變更提醒（0.4.5 → 0.4.6）**
+
+* `EXACT`：`None == None` / 兩個 NaN 以前會成功（score 1），現在預設失敗。要舊行為用 `match_if_both`。
+* `FUZZY` / `JACCARD`：`None` 以前會變成 `"None"` 字串參與比對，現在預設失敗。
+* `Levenshtein` / `JaroWinkler` / `TwoSideIn*`：`None` 以前被 `or ""` 變空字串（兩個 None → 1.0），現在預設失敗。
+* `LetterLCS` / `WordLCS`：`None` 行為不變（本來就 -1.0）；**新增** NaN / pd.NA 也 -1.0。
+* 空字串 `""` 的既有行為全部不變（除非開 `empty_is_null`）。
+
+`NullPolicy.param_meta()` 回傳與 `STRATEGY_PARAM_META` 同 schema 的欄位描述，GUI 可直接拿去產生三個欄位。
 
 ---
 

@@ -32,15 +32,20 @@ class PreprocessedExactMatchStrategy(ExactMatchStrategy):
     ]
 
     def __init__(self, df1: str, df2: str, standard: Any, processors: List[Type[StrProcessorBase]] = None, **kwargs):
-        super().__init__(df1, df2, standard)
+        super().__init__(df1, df2, standard, **kwargs)  # kwargs carries null_policy / strategy_parameters
         self.chain = StrProcessorsChain(processors or self.DEFAULT_PROCESSORS)
 
     def _normalization(self, text) -> str:
         return self.chain.run(str(text))
 
     def evaluate(self, context: TwoSeriesComparisonContext) -> StrategyResult:
-        val1 = self._normalization(context.row1.get(self.df1_col))
-        val2 = self._normalization(context.row2.get(self.df2_col))
+        raw1 = context.row1.get(self.df1_col)
+        raw2 = context.row2.get(self.df2_col)
+        handled = self.null_policy.intercept(raw1, raw2)
+        if handled is not None:
+            return handled
+        val1 = self._normalization(raw1)
+        val2 = self._normalization(raw2)
         flag = val1 == val2
         return StrategyResult(success=flag, score=1 if flag else 0)
 # ### REFACTOR: AdvancedStrategy ###

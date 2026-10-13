@@ -1,7 +1,8 @@
 from typing import List, Tuple, Union, Type
 import pandas as pd
 
-from isd_str_sdk.str_matching.adapters import MatchingStrategyAdapter, STRATEGY_TABLE
+from isd_str_sdk.str_matching.adapters import MatchingStrategyAdapter, STRATEGY_TABLE, STRATEGY_PARAM_META, get_strategy_param_meta
+from isd_str_sdk.str_matching.null_policy import NullPolicy, NullMode, DEFAULT_NULL_POLICY
 from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
 
 
@@ -63,5 +64,6 @@ def match(
 
 
 __all__ = ["match", "MatchingStrategyAdapter", "STRATEGY_TABLE",
-           "STRATEGY_PARAM_META", "get_strategy_param_meta"]
+           "STRATEGY_PARAM_META", "get_strategy_param_meta",
+           "NullPolicy", "NullMode", "DEFAULT_NULL_POLICY"]
 

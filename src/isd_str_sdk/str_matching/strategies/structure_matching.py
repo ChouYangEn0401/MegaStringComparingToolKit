@@ -5,6 +5,7 @@ from isd_py_framework_sdk.helpers.decorators.lifecycle import deprecated
 
 from isd_str_sdk.base.AbstractStrategy import Strategy, StrategyResult
 from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
+from isd_str_sdk.str_matching.null_policy import NullPolicy
 
 
 # --------------------------------------------------------- #
@@ -18,11 +19,15 @@ class InStringStrategy(Strategy[TwoSeriesComparisonContext]):
         self.df1_col = df1
         self.df2_col = df2
         self.standard = standard
+        self.null_policy = NullPolicy.from_kwargs(kwargs)
 
     def evaluate(self, context: TwoSeriesComparisonContext) -> StrategyResult:
-        val1 = context.row1.get(self.df1_col)
-        val2 = context.row2.get(self.df2_col)
-        flag = str(val2) in str(val1)
+        raw1 = context.row1.get(self.df1_col)
+        raw2 = context.row2.get(self.df2_col)
+        handled = self.null_policy.intercept(raw1, raw2)
+        if handled is not None:
+            return handled
+        flag = str(raw2) in str(raw1)
         return StrategyResult(success=flag, score=1 if flag else 0)
 
 class TwoSideInStringStrategy(Strategy[TwoSeriesComparisonContext]):
@@ -34,10 +39,16 @@ class TwoSideInStringStrategy(Strategy[TwoSeriesComparisonContext]):
         self.df2_col = df2
         self.standard = standard
         self.mode = strategy_parameters.get("strategy_mode", "any")
+        self.null_policy = NullPolicy.from_kwargs({"strategy_parameters": strategy_parameters, **kwargs})
 
     def evaluate(self, context: TwoSeriesComparisonContext) -> StrategyResult:
-        val1 = str(context.row1.get(self.df1_col) or "")
-        val2 = str(context.row2.get(self.df2_col) or "")
+        raw1 = context.row1.get(self.df1_col)
+        raw2 = context.row2.get(self.df2_col)
+        handled = self.null_policy.intercept(raw1, raw2)
+        if handled is not None:
+            return handled
+        val1 = str(raw1 or "")
+        val2 = str(raw2 or "")
 
         if self.mode == "a_in_b":
             flag = val1 in val2
@@ -55,10 +66,16 @@ class TwoSideInWith3WordsStringStrategy(Strategy[TwoSeriesComparisonContext]):
         self.df1_col = df1
         self.df2_col = df2
         self.standard = standard
+        self.null_policy = NullPolicy.from_kwargs(kwargs)
 
     def evaluate(self, context: TwoSeriesComparisonContext) -> StrategyResult:
-        val1 = str(context.row1.get(self.df1_col) or "")
-        val2 = str(context.row2.get(self.df2_col) or "")
+        raw1 = context.row1.get(self.df1_col)
+        raw2 = context.row2.get(self.df2_col)
+        handled = self.null_policy.intercept(raw1, raw2)
+        if handled is not None:
+            return handled
+        val1 = str(raw1 or "")
+        val2 = str(raw2 or "")
         flag = (val1 in val2 and len(val1)>=3) or (val2 in val1 and len(val2)>=3)
         return StrategyResult(success=flag, score=1 if flag else 0)
 # ### REFACTOR: 如何透過限縮數量，讓IN可以在某數量相同以後 ###
@@ -69,6 +86,7 @@ class LCSBaseStrategy(Strategy[TwoSeriesComparisonContext], ABC):
         self.df1_col = df1
         self.df2_col = df2
         self.standard = standard
+        self.null_policy = NullPolicy.from_kwargs(kwargs)
 
     @abstractmethod
     def _tokenize(self, text: str) -> List[str]:
@@ -78,15 +96,21 @@ class LCSBaseStrategy(Strategy[TwoSeriesComparisonContext], ABC):
         val1_raw = context.row1.get(self.df1_col)
         val2_raw = context.row2.get(self.df2_col)
 
-        if val2_raw is None or val1_raw is None:
-            return StrategyResult(success=False, score=-1.0)
+        # None / NaN / pd.NA / (optionally) "" are decided by the NullPolicy
+        # BEFORE anything is turned into text, so "nan" never reaches the
+        # tokenizer. Default policy: either side null -> success=False, score=-1.0
+        handled = self.null_policy.intercept(val1_raw, val2_raw)
+        if handled is not None:
+            return handled
 
-        val1 = str(val1_raw).strip() if val1_raw is not None else ""
-        val2 = str(val2_raw).strip() if val2_raw is not None else ""
+        val1 = NullPolicy.to_text(val1_raw).strip()
+        val2 = NullPolicy.to_text(val2_raw).strip()
 
         try:
             tokens1 = self._tokenize(val1)
             tokens2 = self._tokenize(val2)
+            if not isinstance(tokens1, list) or not isinstance(tokens2, list):
+                return StrategyResult(success=False, score=-1.0)
 
             m, n = len(tokens1), len(tokens2)
 
@@ -126,10 +150,16 @@ class JaccardStrategy(Strategy[TwoSeriesComparisonContext]):
         self.df1_col = df1
         self.df2_col = df2
         self.standard = standard
+        self.null_policy = NullPolicy.from_kwargs(kwargs)
 
     def evaluate(self, context: TwoSeriesComparisonContext) -> StrategyResult:
-        val1 = str(context.row1.get(self.df1_col)).split()
-        val2 = str(context.row2.get(self.df2_col)).split()
+        raw1 = context.row1.get(self.df1_col)
+        raw2 = context.row2.get(self.df2_col)
+        handled = self.null_policy.intercept(raw1, raw2)
+        if handled is not None:
+            return handled
+        val1 = NullPolicy.to_text(raw1).split()
+        val2 = NullPolicy.to_text(raw2).split()
 
         set1 = set(val1)
         set2 = set(val2)

@@ -16,8 +16,14 @@ authors = [
 dependencies = [
     "rapidfuzz>=3.0",
     "regex>=2023.0",
-    "pandas>=2.0",
-    "isd-py-framework-sdk @ https://github.com/ChouYangEn0401/ISDPythonFrameworkSDK/releases/download/v0.4.5/isd_py_framework_sdk-0.4.5-py3-none-any.whl#sha256=b35455425080f77c2f277a0393f3c3120e4ad037fab0a05ba39949d4952aec2c",
+    # pandas 2.x and 3.x are both supported: the full test suite (286 tests)
+    # passes under pandas 2.3.3 and 3.0.2. Cap at the next major only.
+    "pandas>=2.0,<4.0",
+    # Depend on the framework by VERSION RANGE, not a hard-pinned direct-URL/hash.
+    # 0.4.5 -> 0.9.x is API-compatible for every name this package imports
+    # (verified by signature diff). Requires the wheel to be resolvable via an
+    # index or `pip install --find-links <dir-with-wheel>`.
+    "isd-py-framework-sdk>=0.9,<1.0",
 ]
 
 [tool.setuptools]

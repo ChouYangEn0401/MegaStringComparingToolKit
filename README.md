@@ -119,13 +119,57 @@ print(r.score)    # 0.5
 
 `standard` 是閾值：`score >= standard` 時 `r.success == True`。
 
+### 空值（None / NaN）怎麼算 — `NullPolicy`
+
+pandas 讀 Excel 的空格是 `NaN` 不是 `None`。0.4.6 起所有兩欄比對策略都先經過 `NullPolicy`，
+預設任一側是 null 就 `success=False, score=-1.0`，**兩個空格不會再以 1.0 分配對成功**。
+
+```python
+from isd_str_sdk.str_matching import NullPolicy, NullMode, MatchingStrategyAdapter
+from isd_str_sdk.str_matching.strategies.structure_matching import WordLCSStrategy
+from isd_str_sdk.core.contexts import TwoSeriesComparisonContext
+import pandas as pd
+
+ctx = lambda a, b: TwoSeriesComparisonContext(row1=pd.Series({"a": a}), row2=pd.Series({"b": b}))
+nan = float("nan")
+
+# 預設：fail（任一側 null → success=False, score=-1.0）
+WordLCSStrategy("a", "b", standard=0.9).evaluate(ctx(nan, nan)).success                       # False
+
+# 兩邊都空才算配對
+WordLCSStrategy("a", "b", standard=0.9,
+                null_policy=NullPolicy(mode=NullMode.MATCH_IF_BOTH)).evaluate(ctx(nan, None)).success  # True
+
+# 用 strategy_parameters dict 給（GUI / JSON 設定走這條）：
+# 把 "" 與 "N/A"、"none" 這類文字也當 null
+WordLCSStrategy("a", "b", standard=0.9, strategy_parameters={
+    "empty_is_null": True, "null_like": "n/a, none, -",
+}).evaluate(ctx("N/A", "none")).success                                                       # False
+
+# Level 2 adapter 一樣吃 strategy_parameters（adapter 只接受 str 輸入）
+MatchingStrategyAdapter("WordLCS", standard=0.5, strategy_parameters={"null_like": "nan"}).run("nan", "nan").success  # False
+
+# 要 0.4.5 以前的行為（null 轉文字照常比對）
+WordLCSStrategy("a", "b", standard=0.5, strategy_parameters={"null_mode": "as_text"})
+```
+
+| `null_mode` | 任一側 null | 兩側皆 null |
+|---|---|---|
+| `fail`（預設） | `success=False, score=-1.0` | 同左 |
+| `match_if_both` | `success=False, score=-1.0` | `success=True, score=1.0` |
+| `as_text` | 不攔截，`str()` 後照常比對（legacy） | 同左 |
+
+直接用策略類別時傳 `null_policy=NullPolicy(...)` 或 `strategy_parameters={...}` 皆可；
+`NullPolicy.param_meta()` 提供與 `STRATEGY_PARAM_META` 同格式的欄位描述，供 GUI 動態產生選項。
+完整說明見 [docs/all_matching_list.md](docs/all_matching_list.md#空值處理-nullpolicy)。
+
 ---
 
 ## 測試
 
 ```bash
 pytest tests/ -q
-# 185 passed, 4 xfailed
+# 250+ passed
 ```
 
 4 件 `xfailed` 是 `StrFunc_NormalizeParentheses`（已知的 `isd_py_framework_sdk` 相依 bug，測試正確標記為預期失敗）。
