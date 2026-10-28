@@ -22,6 +22,9 @@ class TwoSeriesComparisonContextWithStrategyPars(TwoSeriesComparisonContext):
 class ChildrenValueComparisonContext(IComparisonContext):
     """
     用來在遍歷樹時傳遞子節點的判定結果，屬於內部資料。
+
+    ``children_results`` 每一項是 ``bool``；也接受 ``StrategyResult``
+    （邏輯閘取它的 ``.success``）。邏輯閘只讀這個欄位（0.4.7 起）。
     """
     children_results: List[bool]
 

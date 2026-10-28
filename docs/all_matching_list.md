@@ -253,3 +253,28 @@ MatchingStrategyAdapter("WordLCS", standard=0.9, strategy_parameters={"null_like
 | `AND` / `OR` / `NotAND` / `NotOR` | 邏輯門策略（接受子策略結果組合） |
 | `NewJACCARDStrategy` | 實驗性新版 Jaccard |
 
+### 邏輯閘（0.4.7 修正）
+
+0.4.6 以前 `AND` / `OR`（以及繼承它們的 `NotAND` / `NotOR`）的 `evaluate()` 讀
+`context.children` / `context.original_context`，但 `ChildrenValueComparisonContext`
+只有 `children_results`，一執行就 `AttributeError`。0.4.7 起只讀 `children_results`：
+
+```python
+from isd_str_sdk.core.contexts import ChildrenValueComparisonContext
+from isd_str_sdk.str_matching import STRATEGY_TABLE
+
+ctx = ChildrenValueComparisonContext(children_results=[True, False])  # 子節點先跑完，結果交給閘
+STRATEGY_TABLE["AND"]().evaluate(ctx)   # success=False, score=0.5
+STRATEGY_TABLE["OR"]().evaluate(ctx)    # success=True,  score=1.0
+```
+
+| 閘 | success | score | 沒有子結果時 |
+|---|---|---|---|
+| `AND` | 全部為真 | 為真的比例 | success=True, score=0.0 |
+| `OR` | 任一為真 | 任一為真 → 1.0，否則 0.0 | success=False, score=0.0 |
+| `NotAND` / `NotOR` | `AND` / `OR` 翻轉 | 與 `AND` / `OR` 相同 | 翻轉 |
+
+`children_results` 的每一項可以是 `bool` 或 `StrategyResult`（取 `.success`）；回傳的
+`StrategyResult.children` 為 `None`。語意與 ACA / pyDMS 的 `sdk_compat.py`
+（`FixedAndStrategy` 等）逐一相同，下游升到 0.4.7 之後那層 shim 可以不裝。
+

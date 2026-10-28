@@ -20,8 +20,8 @@ Tests for isd_str_sdk string-matching strategies.
 - 空字串 / None 邊界狀況
 
 注意：HybridMatchingStrategy 需要 Excel 權控表，nlp_matching 需要
-      sentence-transformers，均略過。LogicGate 策略的 context 定義
-      與目前的 ChildrenValueComparisonContext 不相容，亦略過。
+      sentence-transformers，均略過。LogicGate 策略（AND / OR / NotAND /
+      NotOR）的測試在 tests/test_logic_gate.py（0.4.7 修正 B-2 後補上）。
 """
 
 import pytest
