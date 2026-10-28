@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 from rapidfuzz import fuzz # 替換 fuzzywuzzy 為 rapidfuzz，以獲得顯著的效能提升
 from typing import Any, Dict
@@ -7,6 +9,31 @@ from isd_str_sdk.core.contexts import (
     TwoSeriesComparisonContext,
     TwoSeriesComparisonContextWithStrategyPars,
 )
+
+
+def _as_count_threshold(standard: Any, owner: str) -> int:
+    """把「共同詞個數」門檻轉成 int；非整數一律 raise ValueError（0.4.8）。
+
+    0.4.7 以前這幾個策略寫 ``int(standard)``：傳 0.75 會被截成 0，
+    ``intersection_len >= 0`` 永遠成立 → 每一對都命中。門檻是**個數**，
+    不是相似度比例，所以分數門檻是設定寫錯，直接擋下來，不替人猜。
+
+    接受：``4``、``4.0``、``"4"``、``"4.0"``（整數值，一律當 4）。
+    拒絕：``0.75``、``4.5``、``"0.75"``、``None``、``"abc"``、NaN、inf。
+    """
+    if isinstance(standard, int):
+        return int(standard)
+    try:
+        value = float(standard)
+    except (TypeError, ValueError):
+        value = None
+    if value is None or not math.isfinite(value) or not value.is_integer():
+        raise ValueError(
+            f"{owner} 的 standard 是「共同詞個數」門檻，要給整數（例如 4）；收到 {standard!r}。"
+            f"0.75 這種分數門檻是設定寫錯——這個策略不比相似度比例，"
+            f"非整數不收（以前會被 int() 截成 0，變成每一對都命中）。"
+        )
+    return int(value)
 
 # from isd_py_framework_sdk.decorators import unfinished, on_dev
 # @on_dev
@@ -44,10 +71,14 @@ class PreprocessedQuantityBasedLCSInStringStrategy(Strategy[TwoSeriesComparisonC
 
 
 class NumberJaccardStrategy(Strategy[TwoSeriesComparisonContext]):
+    """共同詞（以空白切）個數 >= standard 就命中；score 是 Jaccard 比例。
+
+    standard 是**個數**（整數），非整數 raise ValueError，見 ``_as_count_threshold``。
+    """
     def __init__(self, df1: str, df2: str, standard: int, **kwargs):
         self.df1_col = df1
         self.df2_col = df2
-        self.standard = int(standard)
+        self.standard = _as_count_threshold(standard, "NumberJaccardStrategy")
 
     def _evaluate(self, context: TwoSeriesComparisonContext) -> StrategyResult:
         val1 = str(context.row1.get(self.df1_col)).split()
@@ -67,10 +98,15 @@ class NumberJaccardStrategy(Strategy[TwoSeriesComparisonContext]):
         return self._evaluate(context)
 
 class FourJaccardRapidFuzzyScoreStrategy(Strategy[TwoSeriesComparisonContext]):
+    """共同詞（以空白切）個數 >= standard 就命中；score 是 RapidFuzz ratio / 100。
+
+    standard 是**個數**（整數，跟 NumberJaccardStrategy 同一種門檻），
+    不是 score 的門檻；非整數（例如 0.75）raise ValueError，見 ``_as_count_threshold``。
+    """
     def __init__(self, df1: str, df2: str, standard: int, **kwargs):
         self.df1_col = df1
         self.df2_col = df2
-        self.standard = int(standard)
+        self.standard = _as_count_threshold(standard, "FourJaccardRapidFuzzyScoreStrategy")
 
     def evaluate(self, context: TwoSeriesComparisonContext) -> StrategyResult:
         val1 = str(context.row1.get(self.df1_col)).split()
@@ -106,6 +142,17 @@ class NewJACCARDStrategy(AdvancedStrategy[TwoSeriesComparisonContextWithStrategy
             # clearly indicate which params are required
             raise MissingParameters(['split_segment', 'strategy_mode'])
 
+        # amount_mode 的 standard 是「共同詞個數」：0.4.8 起非整數在這裡就 raise
+        # （以前在 evaluate 被 int() 截斷，0.75 → 0 → 永遠命中）。
+        # score_mode 的 standard 是相似度比例，不動。
+        # None / "" 維持舊行為（門檻 0），不在這次修正範圍。
+        self._min_count = None
+        if self.strategy_mode == 'amount_mode':
+            if standard is None or (isinstance(standard, str) and standard == ""):
+                self._min_count = 0
+            else:
+                self._min_count = _as_count_threshold(standard, "NewJACCARDStrategy（amount_mode）")
+
     def get_advanced_settings(self) -> Dict[str, Dict[str, Any]]:
         return {
             'split_segment': {'mode': 'input', 'level': 'necessary'},
@@ -138,11 +185,7 @@ class NewJACCARDStrategy(AdvancedStrategy[TwoSeriesComparisonContextWithStrategy
 
         # amount_mode: require a minimum number of matching tokens
         if self.strategy_mode == 'amount_mode':
-            try:
-                min_count = int(self.standard)
-            except Exception:
-                min_count = int(float(self.standard)) if self.standard else 0
-            success = intersection_len >= min_count
+            success = intersection_len >= self._min_count
             return StrategyResult(success=success, score=float(intersection_len))
 
         # score_mode: compute a similarity ratio according to scoring_method

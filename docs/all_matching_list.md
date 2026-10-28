@@ -278,3 +278,30 @@ STRATEGY_TABLE["OR"]().evaluate(ctx)    # success=True,  score=1.0
 `StrategyResult.children` 為 `None`。語意與 ACA / pyDMS 的 `sdk_compat.py`
 （`FixedAndStrategy` 等）逐一相同，下游升到 0.4.7 之後那層 shim 可以不裝。
 
+### 共同詞個數門檻（0.4.8 修正）
+
+`strategies/undone/quantity_groups.py` 裡有三處門檻是「**共同詞個數**」（以空白或 `split_segment`
+切開之後兩邊都有的詞數），不是相似度比例：
+
+| 類別 | 判斷 | score |
+|---|---|---|
+| `NumberJaccardStrategy` | 共同詞數 ≥ `standard` | Jaccard 比例 |
+| `FourJaccardRapidFuzzyScoreStrategy` | 共同詞數 ≥ `standard` | RapidFuzz ratio / 100 |
+| `NewJACCARDStrategy`（`strategy_mode="amount_mode"`） | 共同詞數 ≥ `standard` | 共同詞數 |
+
+0.4.7 以前這幾處寫 `int(standard)`：傳 `0.75` 會被截成 `0`，`共同詞數 >= 0` 永遠成立 → 每一對都命中。
+0.4.8 起**非整數的門檻在建構時直接 `ValueError`**（`0.75`、`4.5`、`"0.75"`、`None`、`"abc"`、NaN、inf），
+整數值照收並轉成 `int`（`4`、`4.0`、`"4"`、`"4.0"` 都當 4）：
+
+```python
+from isd_str_sdk.str_matching.strategies.undone.quantity_groups import FourJaccardRapidFuzzyScoreStrategy
+
+FourJaccardRapidFuzzyScoreStrategy("a", "b", standard=4)     # OK：至少 4 個共同詞
+FourJaccardRapidFuzzyScoreStrategy("a", "b", standard=0.75)  # ValueError：這是共同詞個數，0.75 是設定寫錯
+```
+
+* `NewJACCARDStrategy` 的 `score_mode` 門檻是相似度比例，**不受影響**；`amount_mode` 的 `None` / `""`
+  維持舊行為（門檻 0）。
+* `NumberJaccardStrategy` / `FourJaccardRapidFuzzyScoreStrategy` 不在 `STRATEGY_TABLE` 裡，要用類別本身
+  （`MatchingStrategyAdapter(FourJaccardRapidFuzzyScoreStrategy, 4)`）。
+* 下游原本傳 `0.75` 的設定，升到 0.4.8 會在建構時報錯——那份設定要改成整數的共同詞個數。
