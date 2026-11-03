@@ -433,3 +433,166 @@ class TestJaccardStrategy:
         # Jaccard operates on sets, duplicates are counted once
         r = self._s(0.9).evaluate(_ctx("apple apple", "apple"))
         assert r.score == pytest.approx(1.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 10. SpacingAndOrderFreeExactStrategy（0.4.9，來自 pyDMS 的需求單 2026-10-28）
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import pickle
+import random
+import time
+
+from isd_str_sdk.str_matching import MatchingStrategyAdapter, STRATEGY_TABLE, NullPolicy, NullMode
+from isd_str_sdk.str_matching.strategies.hybrid_matching import (
+    PreprocessedExactMatchStrategy,
+    SpacingAndOrderFreeExactStrategy,
+)
+
+# 需求單第 2 節的表：(左, 右, PREPROCESSED_EXACT 現況, 新 strategy 期望)
+SPACING_ORDER_TABLE = [
+    ("Tsinghua University", "Tsing Hua University", True, True),
+    ("National Taiwan University", "Taiwan National University", False, True),
+    ("Univ Tokyo", "Tokyo Univ", False, True),
+    ("Hong Kong University", "University Hong Kong", False, True),
+    ("National Cheng Kung University", "National ChengKung University", True, True),
+    ("Kyoto University", "KYOTO UNIVERSITY.", True, True),
+    # 停止詞表只把 of 統一成 OF、不刪 → 多一個詞，鎖住現況：不中
+    ("University of Tokyo", "Tokyo University", False, False),
+]
+
+
+class TestSpacingAndOrderFreeExactStrategy:
+    def _s(self, **kw):
+        return SpacingAndOrderFreeExactStrategy("a", "b", standard=None, **kw)
+
+    @pytest.mark.parametrize("left,right,old,new", SPACING_ORDER_TABLE)
+    def test_acceptance_table(self, left, right, old, new):
+        assert PreprocessedExactMatchStrategy("a", "b", None).evaluate(_ctx(left, right)).success is old
+        r = self._s().evaluate(_ctx(left, right))
+        assert r.success is new
+        assert r.score == (1 if new else 0)
+        # 對稱
+        assert self._s().evaluate(_ctx(right, left)).success is new
+
+    def test_registered_and_exact_flag(self):
+        assert STRATEGY_TABLE["SPACING_ORDER_FREE_EXACT"] is SpacingAndOrderFreeExactStrategy
+        assert self._s().IsExactMatch is True
+        assert MatchingStrategyAdapter("SPACING_ORDER_FREE_EXACT", None).run("Univ Tokyo", "Tokyo Univ").success
+
+    def test_representatives_enumerate_gaps(self):
+        reps = self._s().representatives("Tsing Hua Univ")
+        # 2 個空隙 → 4 種組合
+        assert reps == {"HUA TSING UNIV", "TSINGHUA UNIV", "HUAUNIV TSING", "TSINGHUAUNIV"}
+
+    def test_all_removed_equals_preprocessed_normalization(self):
+        old = PreprocessedExactMatchStrategy("a", "b", None)
+        new = self._s()
+        for text in ["The University of Hong-Kong", "Natl. Taiwan Univ.", "École Polytechnique", "台大", ""]:
+            assert old._normalization(text) in new.representatives(text), text
+
+    def test_superset_of_preprocessed_exact(self):
+        """PREPROCESSED_EXACT 比中的每一組，新 strategy 也比中（隨機產生的大量變體）。"""
+        rng = random.Random(20261028)
+        vocab = ["National", "Taiwan", "University", "Tsing", "Hua", "Univ", "of", "the", "Tokyo",
+                 "Institute", "Technology", "Hong", "Kong", "Cheng", "Kung", "Medical", "Hospital",
+                 "École", "Université", "Dept", "Chem", "123", "A"]
+        seps = ["", " ", "  ", "-", ".", ", ", "&", "'"]
+
+        def variant(words):
+            out = ""
+            for w in words:
+                w = rng.choice([w, w.upper(), w.lower()])
+                out += w + rng.choice(seps)
+            return out
+
+        old = PreprocessedExactMatchStrategy("a", "b", None)
+        new = self._s()
+        checked = 0
+        for _ in range(400):
+            words = rng.sample(vocab, rng.randint(1, 6))
+            left = variant(words)
+            right = variant(words if rng.random() < 0.7 else rng.sample(words, len(words)))
+            if old.evaluate(_ctx(left, right)).success:
+                checked += 1
+                assert new.evaluate(_ctx(left, right)).success, (left, right)
+        assert checked > 100  # 真的有驗到東西
+
+    def test_long_name_uses_two_representatives_and_is_fast(self):
+        name = " ".join(f"Word{i}" for i in range(20))  # 19 個空隙 > 12
+        s = self._s()
+        t0 = time.perf_counter()
+        reps = s.representatives(name)
+        assert time.perf_counter() - t0 < 0.5
+        assert reps == {"".join(s.tokens(name)), " ".join(sorted(s.tokens(name)))}
+        reversed_name = " ".join(reversed(name.split()))
+        assert s.evaluate(_ctx(name, reversed_name)).success is True          # 詞序不分仍成立
+        assert s.evaluate(_ctx(name, name.replace(" ", ""))).success is True  # 全黏起來仍成立
+
+    def test_max_gaps_param(self):
+        s = self._s(strategy_parameters={"max_gaps": "1"})
+        # 2 個空隙 > 1 → 只剩兩種代表字串，「部分空格不同」比不中
+        assert s.evaluate(_ctx("Tsing Hua Univ", "Univ TsingHua")).success is False
+        assert self._s().evaluate(_ctx("Tsing Hua Univ", "Univ TsingHua")).success is True
+        with pytest.raises(ValueError):
+            self._s(max_gaps=1.5)
+        with pytest.raises(ValueError):
+            self._s(max_gaps=-1)
+
+    def test_null_policy(self):
+        nan = float("nan")
+        assert self._s().evaluate(_ctx(nan, nan)).success is False
+        assert self._s().evaluate(_ctx(nan, nan)).score == pytest.approx(-1.0)
+        both = self._s(null_policy=NullPolicy(mode=NullMode.MATCH_IF_BOTH))
+        assert both.evaluate(_ctx(None, nan)).success is True
+        assert both.evaluate(_ctx(None, "x")).success is False
+        # 空字串照舊不是 null：兩個空字串正規化後都是 ""，跟 PREPROCESSED_EXACT 一樣算中
+        assert self._s().evaluate(_ctx("", "")).success is True
+        assert self._s(strategy_parameters={"empty_is_null": True}).evaluate(_ctx("", "")).success is False
+
+    @pytest.mark.parametrize("params", [
+        {},
+        {"null_mode": "match_if_both"},
+        {"null_mode": "as_text"},
+        {"empty_is_null": True, "null_mode": "match_if_both"},
+    ])
+    def test_batch_equals_pairwise(self, params):
+        nan = float("nan")
+        left = ["Tsinghua University", "National Taiwan University", None, "Univ Tokyo", "", nan,
+                "Kyoto University", "University of Tokyo", "台大"]
+        right = ["Tsing Hua University", "Taiwan National University", nan, "Tokyo Univ", "  ",
+                 "KYOTO UNIVERSITY.", "Tokyo University", "清大", None, "National  Taiwan-University"]
+        s = self._s(strategy_parameters=params)
+        expected = [
+            (i, j) for i, a in enumerate(left) for j, b in enumerate(right)
+            if s.evaluate(_ctx(a, b)).success
+        ]
+        assert s.batch_match(left, right) == expected
+        assert len(expected) > 0
+
+    def test_build_index_groups_names(self):
+        s = self._s()
+        index = s.build_index(["Tsinghua University", "Tsing Hua University", "Univ Tokyo", "Tokyo Univ"])
+        assert sorted(index["TSINGHUA UNIVERSITY"]) == [0, 1]
+        assert sorted(index["TOKYO UNIV"]) == [2, 3]
+
+    def test_pickle_drops_cache(self):
+        s = self._s()
+        s.representatives("Tsing Hua University")
+        clone = pickle.loads(pickle.dumps(s))
+        assert clone._cache == {}
+        assert clone.evaluate(_ctx("Tsinghua University", "Tsing Hua University")).success is True
+
+    def test_preprocessed_exact_unchanged(self):
+        """PREPROCESSED_EXACT 的流程一步都沒動（下游逐格守著它）。"""
+        from isd_str_sdk.str_cleaning import (
+            StrFunc_Uppercase, StrFunc_AscendDictionaryOrder, StrFunc_KeepEnglishLetterAndDigits,
+            StrFunc_ExcelACTable_UnionLetter_FOREIGN, StrFunc_Lowercase,
+            StrFunc_ExcelACTable_UnionLetter_ALLOrg, StrFunc_ExcelACTable_UnionLetter_STOPWORD,
+        )
+        assert PreprocessedExactMatchStrategy.DEFAULT_PROCESSORS == [
+            StrFunc_ExcelACTable_UnionLetter_STOPWORD, StrFunc_ExcelACTable_UnionLetter_FOREIGN,
+            StrFunc_Lowercase, StrFunc_ExcelACTable_UnionLetter_ALLOrg,
+            StrFunc_KeepEnglishLetterAndDigits, StrFunc_Uppercase, StrFunc_AscendDictionaryOrder,
+        ]
+        assert SpacingAndOrderFreeExactStrategy.PRE_PROCESSORS == PreprocessedExactMatchStrategy.DEFAULT_PROCESSORS[:4]

@@ -17,7 +17,7 @@ from isd_str_sdk.str_matching.strategies.fuzzy_matching import (
     JaroWinklerStrategy,
     LevenshteinStrategy,
 )
-from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
+from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy, SpacingAndOrderFreeExactStrategy
 from isd_str_sdk.str_matching.strategies.structure_matching import (
     JaccardStrategy,
     LetterLCSStrategy,
@@ -43,6 +43,8 @@ TWO_COLUMN_STRATEGIES = [
     ("LetterLCS", lambda **kw: LetterLCSStrategy("a", "b", standard=0.5, **kw)),
     ("WordLCS", lambda **kw: WordLCSStrategy("a", "b", standard=0.5, **kw)),
     ("TwoSideIn", lambda **kw: TwoSideInStringStrategy("a", "b", standard=None, strategy_parameters=kw.pop("strategy_parameters", {}), **kw)),
+    # 0.4.9
+    ("SpacingAndOrderFreeExact", lambda **kw: SpacingAndOrderFreeExactStrategy("a", "b", standard=None, **kw)),
 ]
 IDS = [name for name, _ in TWO_COLUMN_STRATEGIES]
 FACTORIES = [f for _, f in TWO_COLUMN_STRATEGIES]

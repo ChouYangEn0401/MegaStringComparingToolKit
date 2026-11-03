@@ -21,7 +21,7 @@ else:
             ImportWarning,
         )
         EmbeddingSimilarityStrategy = None
-from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy
+from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy, SpacingAndOrderFreeExactStrategy
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
 from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone
 
@@ -65,6 +65,8 @@ STRATEGY_TABLE = {
 
     # [UPGRADE] precleaned matching method
     "PREPROCESSED_EXACT": PreprocessedExactMatchStrategy,
+    # 0.4.9：空格與詞序都不分（PREPROCESSED_EXACT 的超集）
+    "SPACING_ORDER_FREE_EXACT": SpacingAndOrderFreeExactStrategy,
 
     # undone strategy
     # "AbbrevExactMatchStrategy": AbbrevExactMatchStrategy
@@ -138,6 +140,16 @@ STRATEGY_PARAM_META: Dict[str, Dict[str, Any]] = {
             "label": "Debug print",
         },
     },
+    # ── 0.4.9 ────────────────────────────────────────────────────────────
+    "SPACING_ORDER_FREE_EXACT": {
+        "max_gaps": {
+            "mode": "input",
+            "level": "optional",
+            "default": 12,
+            "type": "int",
+            "label": "Max gaps to enumerate (2^n combos)",
+        },
+    },
 }
 
 
@@ -147,6 +159,7 @@ _TWO_COLUMN_STRATEGY_KEYS = {
     "EXACT", "IN", "TwoSideInStringStrategy", "TwoSideInWith3WordsStringStrategy",
     "LetterLCS", "WordLCS", "JACCARD", "FUZZY", "Levenshtein", "JaroWinkler",
     "Embedding", "PREPROCESSED_EXACT",
+    "SPACING_ORDER_FREE_EXACT",
 }
 
 
