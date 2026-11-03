@@ -41,7 +41,9 @@ for s1, s2, score in results:
 | `"LetterLCS"` | 字元最長共同子序列，適合亂序縮寫 | 0.0–1.0 |
 | `"WordLCS"` | 字詞最長共同子序列 | 0.0–1.0 |
 | `"EXACT"` | 完全一致才算成功 | `1.0` 或 `0.0` |
-| `"PREPROCESSED_EXACT"` | 先正規化（去停止詞/大小寫/符號）再精確比對 | `1.0` 或 `0.0` |
+| `"PREPROCESSED_EXACT"` | 先正規化（去停止詞/大小寫/符號）再精確比對；空格不分、**詞序要一樣** | `1.0` 或 `0.0` |
+| `"SPACING_ORDER_FREE_EXACT"` | 0.4.9：空格與詞序都不分（`PREPROCESSED_EXACT` 的超集） | `1.0` 或 `0.0` |
+| `"REGEX_EXTRACT_EXACT"` / `"REGEX_RULE"` / `"REGEX_NAMED_GROUPS"` / `"REGEX_NORMALIZED_EXACT"` | 0.4.9：regex 當比對規則（見下方「Regex 比對」） | 見各款 |
 
 也可以直接傳**策略類別**：
 
@@ -158,7 +160,7 @@ JaccardStrategy(df1="col_a", df2="col_b", standard=0.5)
 
 ### 空值處理（NullPolicy）
 
-> 0.4.6 起適用於**所有**兩欄比對策略：EXACT / PREPROCESSED_EXACT / FUZZY / Levenshtein / JaroWinkler / JACCARD / LetterLCS / WordLCS / Embedding / IN 系列。
+> 0.4.6 起適用於**所有**兩欄比對策略：EXACT / PREPROCESSED_EXACT / FUZZY / Levenshtein / JaroWinkler / JACCARD / LetterLCS / WordLCS / Embedding / IN 系列；0.4.9 新增的 SPACING_ORDER_FREE_EXACT 與四款 REGEX_* 也一樣。
 
 **為什麼需要它**：pandas 讀 Excel 空格得到 `float('nan')`，舊版只擋 `None`，`"nan"` 會被當成字串進 tokenizer，
 兩個空格就以 1.0 分「配對成功」。NullPolicy 在算分前統一攔截。
@@ -222,8 +224,142 @@ MatchingStrategyAdapter("WordLCS", standard=0.9, strategy_parameters={"null_like
 |---|---|---|
 | `EXACT` | `ExactMatchStrategy` | 嚴格字串相等 |
 | `PREPROCESSED_EXACT` | `PreprocessedExactMatchStrategy` | 正規化 pipeline 後精確比對 |
+| `SPACING_ORDER_FREE_EXACT` | `SpacingAndOrderFreeExactStrategy` | 0.4.9：空格與詞序都不分，`PREPROCESSED_EXACT` 的超集 |
+| `REGEX_EXTRACT_EXACT` | `RegexExtractExactStrategy` | 0.4.9：regex 擷取後比對 |
+| `REGEX_NORMALIZED_EXACT` | `RegexNormalizedExactStrategy` | 0.4.9：regex 規則表正規化後比對 |
+| `REGEX_RULE` | `RegexRuleStrategy` | 0.4.9：一欄是 regex 規則 |
 
 `PREPROCESSED_EXACT` 預設正規化流程：停止詞 → 國外名稱 → 小寫 → 機構名稱 → 保留英數 → 大寫 → 字典序排序
+（最後一步因為「保留英數」已拿掉空白而不生效，實際是「空格不分、詞序要一樣」；要詞序也不分用 `SPACING_ORDER_FREE_EXACT`）
+
+### 空格與詞序都不分（0.4.9 新增）`SPACING_ORDER_FREE_EXACT`
+
+類別：`SpacingAndOrderFreeExactStrategy`（`strategies/hybrid_matching.py`）。是 `PREPROCESSED_EXACT` 的**超集**：
+它比得中的，這一款一定也比得中。
+
+**為什麼要另外做一款、不直接改 `PREPROCESSED_EXACT`**：`PREPROCESSED_EXACT` 的第 7 步（字典序排序）
+因為第 5 步（只留英數）已經把空白拿掉、整串只剩一個詞，**永遠不生效**，所以它其實是「空格不分、詞序要一樣」。
+把排序移到前面也不行——空格不同的那幾組比不比得中會變成看單詞的字母順序（下表第 4 欄）。
+而 `PREPROCESSED_EXACT` 是下游（pyDMS 校名權控 20 段階梯的第 1 段）逐格守著的產出，行為不能動，所以另做一款。
+
+| 左 | 右 | `PREPROCESSED_EXACT` | 只把排序移到前面 | `SPACING_ORDER_FREE_EXACT` |
+|---|---|---|---|---|
+| Tsinghua University | Tsing Hua University | ✅ | ❌（`HUATSINGUNIVERSITY` ≠ `TSINGHUAUNIVERSITY`） | ✅ |
+| National Taiwan University | Taiwan National University | ❌ | ✅ | ✅ |
+| Univ Tokyo | Tokyo Univ | ❌ | ✅ | ✅ |
+| Hong Kong University | University Hong Kong | ❌ | ✅ | ✅ |
+| National Cheng Kung University | National ChengKung University | ✅ | ✅（剛好字母順序相鄰） | ✅ |
+| Kyoto University | KYOTO UNIVERSITY. | ✅ | ✅ | ✅ |
+| University of Tokyo | Tokyo University | ❌ | ❌ | ❌（停止詞表只把 of 統一成 OF、不刪，多一個詞） |
+
+**做法（暴力列舉空格）**
+
+1. 前四步照 `PREPROCESSED_EXACT`（停止詞 → 國外符號 → 小寫 → 機構詞），以空白切成單詞、每個單詞只留英數、轉大寫 → `w1 … wn`。
+2. n−1 個空隙各自「留或拿掉」，共 2^(n−1) 種組合；拿掉的空隙把兩邊的詞黏起來。
+3. 每種組合照字母排序、用空白接起來 ＝ 一個代表字串；一個名字得到一組代表字串。
+4. 兩個名字有任何一個代表字串相同 → `success=True, score=1`；否則 `score=0`。
+
+「空隙全部拿掉」那一組就是 `PREPROCESSED_EXACT` 的正規化結果，所以超集成立（兩邊都正規化成空字串——例如整串中文——也照舊算中）。
+
+| 參數 | 預設 | 說明 |
+|---|---|---|
+| `max_gaps` | `12` | 空隙數超過它的名字只用兩種代表字串：「全部拿掉」與「全部留著＋排序」。超集與詞序不分仍成立，「部分空格不同」不保證 |
+| `pre_processors` | 前四步 | 取代前處理（keyword，GUI 不列） |
+
+**批次（group / 反查表）**：不要 N×M 兩兩比——
+
+```python
+from isd_str_sdk.str_matching.strategies.hybrid_matching import SpacingAndOrderFreeExactStrategy
+
+s = SpacingAndOrderFreeExactStrategy("a", "b", None)
+s.representatives("Tsing Hua University")      # frozenset({'HUA TSING UNIVERSITY', 'TSINGHUA UNIVERSITY', ...})
+s.build_index(names)                           # {代表字串: [位置, ...]} — 共用代表字串的名字就是同一個 group
+s.batch_match(left_names, right_names)         # [(i, j), ...]，跟逐對 evaluate() 的 success 逐格相同（含 NullPolicy）
+```
+
+每個名字的代表字串有快取（pickle 時不帶）。這一款**不在任何預設階梯裡**，用不用由呼叫端決定。
+
+### Regex 比對（0.4.9 新增）
+
+以前 regex 只藏在清理步驟內部（寫死的樣式）。這四款讓 regex 變成**使用者設定的比對規則**
+（`strategies/regex_matching.py`，用 `regex` 套件：相容 `re` 語法，另支援 `\p{L}` 與逾時）。
+
+| 策略鍵 | 類別 | 一句話 | score |
+|---|---|---|---|
+| `REGEX_EXTRACT_EXACT` | `RegexExtractExactStrategy` | 兩邊各用 regex 擷取一段（DOI、年份、ISSN、郵遞區號…），比擷取出來的 | `1/0`；`all_set` 為 Jaccard |
+| `REGEX_RULE` | `RegexRuleStrategy` | 一欄放 regex 規則、另一欄放文字，規則比得中就算中（權控規則表） | `1/0`；壞規則 `-1` |
+| `REGEX_NAMED_GROUPS` | `RegexNamedGroupsStrategy` | 具名群組把字串拆成欄位，逐欄比，`children` 帶每一欄的結果 | 相同欄位比例 |
+| `REGEX_NORMALIZED_EXACT` | `RegexNormalizedExactStrategy` | 一張「樣式 → 取代」規則表依序套到兩邊，再完全比對 | `1/0` |
+
+共通：參數可以當 keyword 也可以放 `strategy_parameters`（GUI 送字串也收）；`ignore_case` 讓樣式與擷取值的比較都不分大小寫；
+樣式在**建構時**編譯，寫錯直接 `ValueError`（`REGEX_RULE` 例外：規則來自資料，壞的那一格判不中、不讓整批停）；
+空值先過 NullPolicy。`get_strategy_param_meta()` 都有登記（自己的參數在前、NullPolicy 三欄在後）。
+
+**`REGEX_EXTRACT_EXACT`**
+
+| 參數 | 預設 | 說明 |
+|---|---|---|
+| `pattern` | 必填 | 擷取用的 regex |
+| `right_pattern` | 同 `pattern` | 右欄用不同的樣式 |
+| `group` | `0` | 群組號碼或具名群組名字（兩個樣式都要有） |
+| `extract_mode` | `first` | `first` 第一個／`all_list` 全部且順序要同／`all_set` 全部當集合、score＝Jaccard、`score >= standard` 算中（`standard` 非數字＝1.0） |
+| `ignore_case` | `False` | |
+
+任一邊什麼都沒擷取到 → `success=False, score=0.0`（兩邊都沒有也一樣）。
+
+```python
+s = RegexExtractExactStrategy("a", "b", None, pattern=r"10\.\d{4,9}/\S+", ignore_case=True)
+# "Smith 2020, doi:10.1000/ABC.1"  vs  "https://doi.org/10.1000/abc.1"  → 中
+```
+
+**`REGEX_RULE`**
+
+| 參數 | 預設 | 說明 |
+|---|---|---|
+| `rule_side` | `right` | 哪一欄放規則 |
+| `match_mode` | `search` | `search` 任一處／`fullmatch` 整串／`match` 從開頭 |
+| `ignore_case` | `False` | |
+| `strip_rule` | `True` | 規則先去前後空白（Excel 儲存格尾巴的空白） |
+| `regex_timeout` | `1.0` 秒 | 單格比對上限，擋 `(a|aa)+$` 這種災難性回溯；`0`／`none` 不設限 |
+| `on_invalid` | `fail` | 規則不合法或逾時：`fail` → `success=False, score=-1.0`；`raise` → `ValueError` |
+
+空的規則一律不中（空 regex 會比中所有字串）。編譯過的規則會快取。
+
+**`REGEX_NAMED_GROUPS`**
+
+| 參數 | 預設 | 說明 |
+|---|---|---|
+| `pattern` | 必填 | 至少一個具名群組 |
+| `right_pattern` | 同 `pattern` | 欄位名字要對得上 |
+| `groups` | 共有的全部 | 只比哪幾個（逗號分隔） |
+| `match_mode` | `search` | 同上 |
+| `ignore_case` | `False` | |
+
+整個樣式沒比中 → `score=0.0`；兩邊都沒值的群組不列入計分、只有一邊有值算不同；
+`score = 相同數 / 計分數`，`score >= standard` 算中（`standard` 非數字＝1.0）。`children` 照 `groups` 順序，
+每欄一個 `StrategyResult`（不列入計分的 `score=None`）。
+
+```python
+s = RegexNamedGroupsStrategy("a", "b", 0.7,
+        pattern=r"(?P<year>\d{4})\s+Vol\s*(?P<vol>\d+)(?:\((?P<no>\d+)\))?")
+s.evaluate(ctx("2021 Vol 12(3)", "2021 Vol 12(4)"))   # score=2/3, success=False（期數對不上）
+```
+
+**`REGEX_NORMALIZED_EXACT`**
+
+| 參數 | 預設 | 說明 |
+|---|---|---|
+| `rules` | 必填 | `[(pattern, replacement), ...]`，或一行一條的字串 `pattern => replacement`（沒有 `=>`＝刪掉；空行、`#` 開頭略過）。可用 `\1`／`\g<name>`，**依序**套用 |
+| `collapse_whitespace` | `True` | 套完後連續空白縮成一個、去前後空白 |
+| `ignore_case` | `False` | |
+
+```python
+s = RegexNormalizedExactStrategy("a", "b", None, rules=r"""
+\bUniv\b\.? => University
+\bNatl\b\.? => National
+""")
+s.normalize("Natl. Taiwan Univ.")   # 'National Taiwan University'
+```
 
 ### 模糊比對
 

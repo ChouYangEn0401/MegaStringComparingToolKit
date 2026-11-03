@@ -97,7 +97,26 @@ for s1, s2, score in results:
 # 'Apple Inc.' ->  'Apple'              (0.8)
 ```
 
-`strategy` 可用值：`"FUZZY"` / `"EXACT"` / `"Levenshtein"` / `"JaroWinkler"` / `"JACCARD"` / `"LetterLCS"` / `"WordLCS"` / `"PREPROCESSED_EXACT"`
+`strategy` 可用值：`"FUZZY"` / `"EXACT"` / `"Levenshtein"` / `"JaroWinkler"` / `"JACCARD"` / `"LetterLCS"` / `"WordLCS"` / `"PREPROCESSED_EXACT"` / `"SPACING_ORDER_FREE_EXACT"` / `"REGEX_EXTRACT_EXACT"` / `"REGEX_RULE"` / `"REGEX_NAMED_GROUPS"` / `"REGEX_NORMALIZED_EXACT"`
+
+### 0.4.9 新增：空格與詞序都不分、regex 當比對規則
+
+| 策略鍵 | 做什麼 |
+|---|---|
+| `SPACING_ORDER_FREE_EXACT` | 空格與詞序都不分的完全比對（暴力列舉空格「留或拿掉」）。`PREPROCESSED_EXACT` 的超集；有 `batch_match()` 反查表，不必 N×M |
+| `REGEX_EXTRACT_EXACT` | 兩邊各用 regex 擷取一段（DOI、年份、ISSN…）再比 |
+| `REGEX_RULE` | 一欄放 regex 規則、另一欄放文字；有逾時保護、壞規則只判不中 |
+| `REGEX_NAMED_GROUPS` | 具名群組拆成欄位逐欄比，score＝相同欄位比例，`children` 帶每欄結果 |
+| `REGEX_NORMALIZED_EXACT` | 「樣式 → 取代」規則表套到兩邊再完全比對 |
+
+```python
+from isd_str_sdk.str_matching import MatchingStrategyAdapter
+
+MatchingStrategyAdapter("SPACING_ORDER_FREE_EXACT", None).run("Tsing Hua University", "University Tsinghua").success  # True
+MatchingStrategyAdapter("REGEX_EXTRACT_EXACT", None, pattern=r"\d{4}").run("Paper (2021)", "2021 issue").success   # True
+```
+
+參數與細節見 [docs/all_matching_list.md](docs/all_matching_list.md)（「空格與詞序都不分」「Regex 比對」兩節）。
 
 也可以直接傳策略類別（有 IDE 補全）：
 
@@ -169,7 +188,7 @@ WordLCSStrategy("a", "b", standard=0.5, strategy_parameters={"null_mode": "as_te
 
 ```bash
 pytest tests/ -q
-# 250+ passed
+# 600 passed（0.4.9）
 ```
 
 4 件 `xfailed` 是 `StrFunc_NormalizeParentheses`（已知的 `isd_py_framework_sdk` 相依 bug，測試正確標記為預期失敗）。

@@ -25,6 +25,10 @@ def match(
     strategy : 策略名稱字串或策略類別，預設 "FUZZY"
                可用："FUZZY" / "EXACT" / "Levenshtein" / "JaroWinkler"
                      "JACCARD" / "LetterLCS" / "WordLCS" / "PREPROCESSED_EXACT"
+                     "SPACING_ORDER_FREE_EXACT"（0.4.9）
+                     "REGEX_EXTRACT_EXACT" / "REGEX_RULE" / "REGEX_NAMED_GROUPS" /
+                     "REGEX_NORMALIZED_EXACT"（0.4.9；需要的參數直接當 keyword 給，
+                     例如 pattern=r"\\d{4}"）
     threshold : 最低分數門檻（0.0 ~ 1.0），低於此分數的配對不會出現在結果中
 
     Examples
