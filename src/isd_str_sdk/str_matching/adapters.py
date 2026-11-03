@@ -22,6 +22,12 @@ else:
         )
         EmbeddingSimilarityStrategy = None
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy, SpacingAndOrderFreeExactStrategy
+from isd_str_sdk.str_matching.strategies.regex_matching import (
+    RegexExtractExactStrategy,
+    RegexRuleStrategy,
+    RegexNamedGroupsStrategy,
+    RegexNormalizedExactStrategy,
+)
 from isd_str_sdk.str_matching.strategies.undone.OnDenStrategy import OnDevStrategy
 from isd_str_sdk.str_matching.strategies.undone.abbrev_matching import AbbrevExactMatchStrategy  # undone
 
@@ -67,6 +73,12 @@ STRATEGY_TABLE = {
     "PREPROCESSED_EXACT": PreprocessedExactMatchStrategy,
     # 0.4.9：空格與詞序都不分（PREPROCESSED_EXACT 的超集）
     "SPACING_ORDER_FREE_EXACT": SpacingAndOrderFreeExactStrategy,
+
+    # 0.4.9：regex 方向（樣式是使用者設定的比對規則）
+    "REGEX_EXTRACT_EXACT": RegexExtractExactStrategy,
+    "REGEX_RULE": RegexRuleStrategy,
+    "REGEX_NAMED_GROUPS": RegexNamedGroupsStrategy,
+    "REGEX_NORMALIZED_EXACT": RegexNormalizedExactStrategy,
 
     # undone strategy
     # "AbbrevExactMatchStrategy": AbbrevExactMatchStrategy
@@ -150,6 +162,90 @@ STRATEGY_PARAM_META: Dict[str, Dict[str, Any]] = {
             "label": "Max gaps to enumerate (2^n combos)",
         },
     },
+    "REGEX_EXTRACT_EXACT": {
+        "pattern": {
+            "mode": "input", "level": "necessary", "default": "", "type": "str",
+            "label": "Extract pattern (regex)",
+        },
+        "right_pattern": {
+            "mode": "input", "level": "optional", "default": "", "type": "str",
+            "label": "Right-side pattern (default: same)",
+        },
+        "group": {
+            "mode": "input", "level": "optional", "default": "0", "type": "str",
+            "label": "Group (index or name)",
+        },
+        "extract_mode": {
+            "mode": "select", "level": "optional", "options": ["first", "all_list", "all_set"],
+            "default": "first", "type": "str", "label": "Extract mode",
+        },
+        "ignore_case": {
+            "mode": "select", "level": "optional", "options": ["False", "True"],
+            "default": False, "type": "bool", "label": "Ignore case",
+        },
+    },
+    "REGEX_RULE": {
+        "rule_side": {
+            "mode": "select", "level": "optional", "options": ["right", "left"],
+            "default": "right", "type": "str", "label": "Column holding the regex rules",
+        },
+        "match_mode": {
+            "mode": "select", "level": "optional", "options": ["search", "fullmatch", "match"],
+            "default": "search", "type": "str", "label": "Match mode",
+        },
+        "ignore_case": {
+            "mode": "select", "level": "optional", "options": ["False", "True"],
+            "default": False, "type": "bool", "label": "Ignore case",
+        },
+        "strip_rule": {
+            "mode": "select", "level": "optional", "options": ["True", "False"],
+            "default": True, "type": "bool", "label": "Strip spaces around rules",
+        },
+        "regex_timeout": {
+            "mode": "input", "level": "optional", "default": 1.0, "type": "float",
+            "label": "Timeout per cell (seconds, 0 = none)",
+        },
+        "on_invalid": {
+            "mode": "select", "level": "optional", "options": ["fail", "raise"],
+            "default": "fail", "type": "str", "label": "Invalid / timed-out rule",
+        },
+    },
+    "REGEX_NAMED_GROUPS": {
+        "pattern": {
+            "mode": "input", "level": "necessary", "default": "", "type": "str",
+            "label": "Pattern with named groups",
+        },
+        "right_pattern": {
+            "mode": "input", "level": "optional", "default": "", "type": "str",
+            "label": "Right-side pattern (default: same)",
+        },
+        "groups": {
+            "mode": "input", "level": "optional", "default": "", "type": "str",
+            "label": "Groups to compare (comma separated; default: all)",
+        },
+        "match_mode": {
+            "mode": "select", "level": "optional", "options": ["search", "fullmatch", "match"],
+            "default": "search", "type": "str", "label": "Match mode",
+        },
+        "ignore_case": {
+            "mode": "select", "level": "optional", "options": ["False", "True"],
+            "default": False, "type": "bool", "label": "Ignore case",
+        },
+    },
+    "REGEX_NORMALIZED_EXACT": {
+        "rules": {
+            "mode": "input", "level": "necessary", "default": "", "type": "str",
+            "label": "Rules (one per line: pattern => replacement)",
+        },
+        "collapse_whitespace": {
+            "mode": "select", "level": "optional", "options": ["True", "False"],
+            "default": True, "type": "bool", "label": "Collapse whitespace afterwards",
+        },
+        "ignore_case": {
+            "mode": "select", "level": "optional", "options": ["False", "True"],
+            "default": False, "type": "bool", "label": "Ignore case",
+        },
+    },
 }
 
 
@@ -159,7 +255,8 @@ _TWO_COLUMN_STRATEGY_KEYS = {
     "EXACT", "IN", "TwoSideInStringStrategy", "TwoSideInWith3WordsStringStrategy",
     "LetterLCS", "WordLCS", "JACCARD", "FUZZY", "Levenshtein", "JaroWinkler",
     "Embedding", "PREPROCESSED_EXACT",
-    "SPACING_ORDER_FREE_EXACT",
+    "SPACING_ORDER_FREE_EXACT", "REGEX_EXTRACT_EXACT", "REGEX_RULE",
+    "REGEX_NAMED_GROUPS", "REGEX_NORMALIZED_EXACT",
 }
 
 

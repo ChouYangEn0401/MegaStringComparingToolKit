@@ -18,6 +18,12 @@ from isd_str_sdk.str_matching.strategies.fuzzy_matching import (
     LevenshteinStrategy,
 )
 from isd_str_sdk.str_matching.strategies.hybrid_matching import PreprocessedExactMatchStrategy, SpacingAndOrderFreeExactStrategy
+from isd_str_sdk.str_matching.strategies.regex_matching import (
+    RegexExtractExactStrategy,
+    RegexNamedGroupsStrategy,
+    RegexNormalizedExactStrategy,
+    RegexRuleStrategy,
+)
 from isd_str_sdk.str_matching.strategies.structure_matching import (
     JaccardStrategy,
     LetterLCSStrategy,
@@ -45,6 +51,10 @@ TWO_COLUMN_STRATEGIES = [
     ("TwoSideIn", lambda **kw: TwoSideInStringStrategy("a", "b", standard=None, strategy_parameters=kw.pop("strategy_parameters", {}), **kw)),
     # 0.4.9
     ("SpacingAndOrderFreeExact", lambda **kw: SpacingAndOrderFreeExactStrategy("a", "b", standard=None, **kw)),
+    ("RegexExtractExact", lambda **kw: RegexExtractExactStrategy("a", "b", None, pattern=r"\w+", **kw)),
+    ("RegexRule", lambda **kw: RegexRuleStrategy("a", "b", None, **kw)),
+    ("RegexNamedGroups", lambda **kw: RegexNamedGroupsStrategy("a", "b", None, pattern=r"(?P<w>\w+)", **kw)),
+    ("RegexNormalizedExact", lambda **kw: RegexNormalizedExactStrategy("a", "b", None, rules=r"\s+ => ", **kw)),
 ]
 IDS = [name for name, _ in TWO_COLUMN_STRATEGIES]
 FACTORIES = [f for _, f in TWO_COLUMN_STRATEGIES]
