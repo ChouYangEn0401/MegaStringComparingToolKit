@@ -188,10 +188,10 @@ WordLCSStrategy("a", "b", standard=0.5, strategy_parameters={"null_mode": "as_te
 
 ```bash
 pytest tests/ -q
-# 600 passed（0.4.9）
+# 614 passed（0.4.10a1）
 ```
 
-4 件 `xfailed` 是 `StrFunc_NormalizeParentheses`（已知的 `isd_py_framework_sdk` 相依 bug，測試正確標記為預期失敗）。
+（以前寫的「4 件 `xfailed` 是 `StrFunc_NormalizeParentheses`」已經不成立：那是 `isd_py_framework_sdk` 舊版 `@old_method` 引用了沒定義的名字，framework 0.9.x 修好之後這 4 件都通過。）repo 根目錄直接跑 `pytest` 也只收 `tests/`（pyproject 的 `testpaths`）。
 
 ## NLP 額外套件（可選）
 
@@ -229,9 +229,9 @@ pip install sentence-transformers
 
 ## 依賴說明（isd-py-framework-sdk）
 
-本專案依賴 `isd-py-framework-sdk`（v0.4.5）。若你的環境無法自動取得該套件，可從下列位置下載 wheel：
+本專案依賴 `isd-py-framework-sdk>=0.9,<1.0`（`pyproject.toml` 是唯一的宣告處；0.4.6 起）。⚠️ 不要裝 0.4.5：它的 `@old_method` 引用了沒定義的名字，用到被它裝飾的函式就 `NameError`。若你的環境無法自動取得該套件，可從下列位置下載 wheel：
 
-https://github.com/ChouYangEn0401/ISDPythonFrameworkSDK/releases/download/v0.4.5/isd_py_framework_sdk-0.4.5-py3-none-any.whl
+https://github.com/ChouYangEn0401/ISDPythonFrameworkSDK/releases/download/v0.9.2/isd_py_framework_sdk-0.9.2-py3-none-any.whl
 
 通常情況下，使用 `pip install .` 或安裝本專案的 wheel 時，安裝流程會自動安裝相依套件（`pyproject.toml` / `requirements.txt` 已包含相依的公開 URL），因此一般使用者不需額外處理。
 

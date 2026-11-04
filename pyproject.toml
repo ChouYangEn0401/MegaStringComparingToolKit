@@ -58,6 +58,8 @@ all = [
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+# 只收 tests/：src/…/undone/ 裡有一支 test__ 開頭的舊手動腳本（import 不到 TDD 模組），不是 pytest 測試
+testpaths = ["tests"]
 
 [tool.setuptools.package-data]
 "isd_str_sdk" = [

@@ -297,9 +297,8 @@ class TestStrFunc_CleanEscapedSymbols:
         assert "'" not in result  # stripped by the final `replace("'", "")`
 
 
-# StrFunc_NormalizeParentheses is decorated with @old_method which triggers
-# a NameError in isd_py_framework_sdk <= 0.3.2 (OldWarning not defined).
-# Mark these as xfail until the dependency is fixed.
+# StrFunc_NormalizeParentheses is decorated with @old_method, which raised NameError in old
+# isd_py_framework_sdk releases (OldWarning not defined). Fixed in framework 0.9.x — these pass now.
 class TestStrFunc_NormalizeParentheses:
     def test_full_width_parentheses(self):
         result = StrFunc_NormalizeParentheses("（hello）").get_result()
