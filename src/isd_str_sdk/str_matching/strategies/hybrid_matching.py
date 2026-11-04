@@ -13,6 +13,7 @@ from isd_str_sdk.str_cleaning import (
     StrFunc_Lowercase,
     StrFunc_ExcelACTable_UnionLetter_ALLOrg,
     StrFunc_ExcelACTable_UnionLetter_STOPWORD,
+    StrFunc_RemoveAllWhitespace,
 )
 from isd_str_sdk.str_matching.strategies.exact_matching import ExactMatchStrategy
 from isd_str_sdk.str_matching.null_policy import NullMode
@@ -60,6 +61,30 @@ class PreprocessedExactMatchStrategy(ExactMatchStrategy):
         flag = val1 == val2
         return StrategyResult(success=flag, score=1 if flag else 0)
 # ### REFACTOR: AdvancedStrategy ###
+
+
+class CaseSpaceFreeExactMatchStrategy(PreprocessedExactMatchStrategy):
+    """大寫＋去掉所有空白之後完全比對（``"CASE_SPACE_FREE_EXACT"``）：大小寫、空白不分，**標點照留**。
+
+    ``National  Taiwan Univ.`` ＝ ``NATIONALTAIWANUNIV.``；``Texas A&M`` ≠ ``Texas A M``（``&`` 還在）。
+    比 ``PREPROCESSED_EXACT`` 嚴：不做停止詞、國外符號、機構詞轉換、不拿掉標點。
+    用途：比對階梯裡放在「單純完全比對」與「前清理完全比對」之間，差一點大小寫／空白的先配掉，
+    不必一次把鑑別度都洗掉（pyDMS 2026-11-04 的 23 段階梯第 2 段）。名字刻意含 ``ExactMatch``
+    （下游有程式用名字裡的 ``ExactMatch`` 認完全比對）。
+    """
+    DEFAULT_PROCESSORS = [StrFunc_RemoveAllWhitespace, StrFunc_Uppercase]
+
+
+class CaseSpaceSymbolFreeExactMatchStrategy(PreprocessedExactMatchStrategy):
+    """大寫＋去空白＋符號轉換之後完全比對（``"CASE_SPACE_SYMBOL_FREE_EXACT"``）：國外符號轉換（``é`` → ``e``）、
+    只留英文字母與數字（標點、空白都拿掉）。
+
+    ``Université de Montréal`` → ``UNIVERSITEDEMONTREAL``；``Texas A&M`` ＝ ``Texas A M``。
+    比 ``PREPROCESSED_EXACT`` 嚴：不做停止詞統一、機構詞轉換（``de`` 不會變 ``of``）、不排序。
+    （pyDMS 23 段階梯第 3 段；名字刻意含 ``ExactMatch``，理由同上。）
+    """
+    DEFAULT_PROCESSORS = [StrFunc_ExcelACTable_UnionLetter_FOREIGN, StrFunc_KeepEnglishLetterAndDigits, StrFunc_Uppercase]
+
 
 
 

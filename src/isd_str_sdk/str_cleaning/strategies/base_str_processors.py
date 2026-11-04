@@ -160,7 +160,17 @@ class StrFunc_NormalizeWhitespace(StrProcessorBase):
         # Cc = 控制字符
         text = regex.sub(r'[\p{Z}\s\p{Cc}]+', ' ', text)
         return text.strip()
-    
+
+
+class StrFunc_RemoveAllWhitespace(StrProcessorBase):
+    """把所有空白字元（半形、全形、tab、換行、控制字元——跟 ``StrFunc_NormalizeWhitespace`` 同一組）**全部拿掉**。
+
+    ``"  National  Taiwan　Univ. "`` → ``"NationalTaiwanUniv."``（標點照留）。
+    """
+    @enforce_types(str, str)
+    def _handle(self) -> str:
+        return regex.sub(r'[\p{Z}\s\p{Cc}]+', '', self.input_str)
+
 class StrFunc_KeepEnglishParenthesesAndSpaces(StrProcessorBase):
     """保留字串中的英文字母、半形括號和空白字元，移除其他字元。"""
     @enforce_types(str, str)

@@ -43,6 +43,8 @@ for s1, s2, score in results:
 | `"EXACT"` | 完全一致才算成功 | `1.0` 或 `0.0` |
 | `"PREPROCESSED_EXACT"` | 先正規化（去停止詞/大小寫/符號）再精確比對；空格不分、**詞序要一樣** | `1.0` 或 `0.0` |
 | `"SPACING_ORDER_FREE_EXACT"` | 0.4.9：空格與詞序都不分（`PREPROCESSED_EXACT` 的超集） | `1.0` 或 `0.0` |
+| `"CASE_SPACE_FREE_EXACT"` | 大寫＋去掉所有空白後精確比對；**標點照留**（比 `PREPROCESSED_EXACT` 嚴） | `1.0` 或 `0.0` |
+| `"CASE_SPACE_SYMBOL_FREE_EXACT"` | 大寫＋去空白＋國外符號轉換＋只留英數後精確比對；不做停止詞／機構詞／排序 | `1.0` 或 `0.0` |
 | `"REGEX_EXTRACT_EXACT"` / `"REGEX_RULE"` / `"REGEX_NAMED_GROUPS"` / `"REGEX_NORMALIZED_EXACT"` | 0.4.9：regex 當比對規則（見下方「Regex 比對」） | 見各款 |
 
 也可以直接傳**策略類別**：
@@ -225,6 +227,8 @@ MatchingStrategyAdapter("WordLCS", standard=0.9, strategy_parameters={"null_like
 | `EXACT` | `ExactMatchStrategy` | 嚴格字串相等 |
 | `PREPROCESSED_EXACT` | `PreprocessedExactMatchStrategy` | 正規化 pipeline 後精確比對 |
 | `SPACING_ORDER_FREE_EXACT` | `SpacingAndOrderFreeExactStrategy` | 0.4.9：空格與詞序都不分，`PREPROCESSED_EXACT` 的超集 |
+| `CASE_SPACE_FREE_EXACT` | `CaseSpaceFreeExactMatchStrategy` | 大寫＋去空白（`StrFunc_RemoveAllWhitespace` → `StrFunc_Uppercase`） |
+| `CASE_SPACE_SYMBOL_FREE_EXACT` | `CaseSpaceSymbolFreeExactMatchStrategy` | `StrFunc_ExcelACTable_UnionLetter_FOREIGN` → `StrFunc_KeepEnglishLetterAndDigits` → `StrFunc_Uppercase` |
 | `REGEX_EXTRACT_EXACT` | `RegexExtractExactStrategy` | 0.4.9：regex 擷取後比對 |
 | `REGEX_NORMALIZED_EXACT` | `RegexNormalizedExactStrategy` | 0.4.9：regex 規則表正規化後比對 |
 | `REGEX_RULE` | `RegexRuleStrategy` | 0.4.9：一欄是 regex 規則 |

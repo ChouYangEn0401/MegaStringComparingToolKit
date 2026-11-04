@@ -22,6 +22,7 @@ NOPARS_STRATEGY_TABLE = {
     "StrFunc_CleanEscapedSymbols": StrFunc_CleanEscapedSymbols,
     "StrFunc_NormalizeParentheses": StrFunc_NormalizeParentheses,
     "StrFunc_NormalizeWhitespace": StrFunc_NormalizeWhitespace,
+    "StrFunc_RemoveAllWhitespace": StrFunc_RemoveAllWhitespace,
     "StrFunc_KeepEnglishParenthesesAndSpaces": StrFunc_KeepEnglishParenthesesAndSpaces,
     "StrFunc_RemoveUpperCaseStopwords": StrFunc_RemoveUpperCaseStopwords,
     # ── Excel AC Table (pre-contextualised) ──────────────────────────────────

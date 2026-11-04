@@ -62,6 +62,7 @@ CleaningStrategyAdapter("StrFunc_KeepEnglishLetterAndDigits").run("abc 123!@#")
 | `StrFunc_NormalizeSpacingBetweenWords` | 連續空白（含 tab/換行）縮為單一空白 | `"hello\t\nworld"` → `"hello world"` |
 | `StrFunc_NormalizeUnicodeSpacing` | Unicode 空白字元（全形空白等）轉半形 | `"hello　world"` → `"hello world"` |
 | `StrFunc_NormalizeWhitespace` | **最推薦**：Unicode 空白正規化 + 去前後空白（以上三者合體） | `"  hello　 world  "` → `"hello world"` |
+| `StrFunc_RemoveAllWhitespace` | 所有空白（同上那一組）**全部拿掉**，標點照留 | `"  hello　 world. "` → `"helloworld."` |
 
 ### 特殊文字處理
 
